@@ -81,7 +81,7 @@ a8s-commandline/
 | `internal/confirm` | Confirm destructive operations and implement `--yes`. |
 | `internal/workflow` | Poll, wait, and coordinate multi-endpoint operations. |
 | `internal/stream` | Handle SSE, WebSocket, and log streams with cancellation and reconnect logic. |
-| `internal/manifest` | Read and validate YAML/JSON request files and stdin. |
+| `internal/manifest` | Read, strictly decode, merge, and validate YAML/JSON operation input and stdin for every payload-bearing mutation command. |
 | `internal/testutil` | Provide mock servers, fixtures, fake credentials, and output capture. |
 
 ## Dependency Direction
@@ -282,4 +282,3 @@ The CLI architecture is production-ready when:
 - all commands have unit or contract tests
 - critical workflows have authenticated integration tests
 - no internal callback or webhook endpoint is exposed
-

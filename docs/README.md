@@ -8,6 +8,7 @@
 | [architecture.md](architecture.md) | Production Go/Cobra architecture, package boundaries, and migration plan. |
 | [authentication.md](authentication.md) | Keycloak login, token refresh, credential storage, logout, and authorization. |
 | [configuration.md](configuration.md) | Context schema, flags, environment variables, precedence, and legacy migration. |
+| [operation-input.md](operation-input.md) | Production-wide YAML/JSON and equivalent-flag policy for mutation commands. |
 | [error-contract.md](error-contract.md) | Normalized errors, retries, timeouts, and stable CLI exit codes. |
 | [workflows.md](workflows.md) | Waiting, polling, streaming, and terminal-state behavior. |
 | [testing-strategy.md](testing-strategy.md) | Unit, contract, integration, security, and release testing. |
@@ -24,6 +25,7 @@
 | Architecture specification | Complete |
 | Authentication specification | Complete |
 | Configuration specification | Complete |
+| Operation-input specification | Complete |
 | Error contract | Complete |
 | Workflow contract | Complete |
 | Testing strategy | Complete |
@@ -42,4 +44,3 @@ Do not declare the CLI production-ready until:
 - critical workflows pass authenticated integration tests
 - OpenAPI drift checks pass
 - release binaries are signed and checksummed
-

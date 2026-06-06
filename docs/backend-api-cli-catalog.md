@@ -70,7 +70,16 @@ a8s
 
 - Use `get`, `list`, `create`, `update`, and `delete` consistently under each resource group.
 - Require `--yes` for destructive commands and support `--dry-run` where the API permits it.
-- Support `--output table|json|yaml`, plus `--file` for complex request bodies.
+- Support `--output table|json|yaml`.
+- Every command with a configurable request payload must support both equivalent
+  flags and YAML/JSON input through `--file`, even when the request payload is
+  small.
+- Resolve mutation input using `explicit flags > operation file > active
+  context defaults > backend defaults`; only explicitly supplied flags may
+  override file values.
+- Commands without a configurable request payload, such as reads, downloads,
+  deletes, streams, and payload-free actions, do not require operation-file
+  input.
 - Keep payment commands under `a8s workspace quota` because payment currently exists only for quota and plan purchases.
 - Never expose internal callbacks, provider webhook receivers, or Jenkins completion callbacks as ordinary CLI commands.
 
@@ -113,7 +122,7 @@ Recommended context precedence: explicit command flags, active context, environm
 | `--target-cluster` | Select a configured Kubernetes cluster alias. |
 | `--output table|json|yaml` | Select machine-readable or human-readable output. |
 | `--output-file <path>` | Write downloaded certificates, backups, reports, or other binary content to a file. |
-| `--file <path>` | Read a complex request body from YAML or JSON; support `-` for stdin. |
+| `--file <path>` | Read a mutation request body from YAML or JSON; supported by every command with configurable payload data, and supports `-` for stdin. |
 | `--wait` | Wait until an asynchronous operation reaches a terminal state. |
 | `--timeout <duration>` | Limit request, polling, or streaming duration. |
 | `--yes` | Skip destructive-operation confirmation. |

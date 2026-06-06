@@ -55,6 +55,51 @@ restore, rollback, approve, reject, connect, disconnect
 
 Avoid action-first top-level commands such as `a8s create user`.
 
+## Mutation Input Policy
+
+Every command that sends a configurable request payload to the backend must
+support both:
+
+- individual command flags
+- a YAML or JSON operation document supplied with `--file <path>` or
+  `--file -`
+
+This rule applies even when the backend request contains only one configurable
+field. Users may choose the most convenient form:
+
+```bash
+a8s database upgrade <deployment-id> --version 17
+a8s database upgrade <deployment-id> --file upgrade.yaml
+
+a8s project domain set <project-id> --domain api.example.com
+a8s project domain set <project-id> --file domain.yaml
+
+a8s scan start --image nginx:1.27
+a8s scan start --file scan.yaml
+```
+
+Both input forms must resolve to the same typed internal request model and
+produce the same backend payload.
+
+Input precedence is:
+
+```text
+explicit flags > operation file > active-context defaults > backend defaults
+```
+
+Only flags explicitly supplied by the user override operation-file values.
+Cobra default values must not accidentally replace values loaded from a file.
+
+Commands without a configurable request payload do not accept operation
+documents. This includes ordinary `get`, `list`, `status`, `watch`, `logs`,
+`download`, and delete commands, plus payload-free actions such as restart or
+sync. Their positional identifiers, output controls, confirmation flags, and
+workflow controls remain normal arguments and flags.
+
+File-content commands such as environment import, avatar upload, SQL query
+files, and documentation upload use their domain file directly. That file is
+not an operation YAML/JSON document.
+
 ## Required CLI-Only Commands
 
 ```bash
@@ -74,7 +119,10 @@ a8s version --client --server
 - safe destructive confirmation
 - JSON/YAML output suitable for automation
 - no secret values in help examples
-- `--file -` support for complex stdin input
+- `--file` and equivalent flags for every configurable mutation payload,
+  including small payloads
+- `--file -` support for YAML/JSON operation input from stdin
+- identical validation and backend payloads for file and flag input
 - `--wait` and `--timeout` where asynchronous
 - role requirements documented for admin commands
 
@@ -94,4 +142,3 @@ If compatibility is needed, keep them as hidden or deprecated aliases that print
 ## Reference Validation
 
 CI should generate the Cobra reference and fail when committed generated files differ. It should also compare implemented command paths with `backend-api-cli-catalog.md`.
-
