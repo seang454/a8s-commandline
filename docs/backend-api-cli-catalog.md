@@ -41,6 +41,9 @@ a8s
 |-- defectdojo
 |-- alert
 |-- notification
+|-- doctor
+|-- completion
+|-- version
 `-- admin
     |-- user
     |-- project
@@ -70,6 +73,169 @@ a8s
 - Support `--output table|json|yaml`, plus `--file` for complex request bodies.
 - Keep payment commands under `a8s workspace quota` because payment currently exists only for quota and plan purchases.
 - Never expose internal callbacks, provider webhook receivers, or Jenkins completion callbacks as ordinary CLI commands.
+
+## Authentication and Session Management
+
+Authentication commands are CLI workflows rather than direct one-to-one endpoint mappings. The CLI should use Keycloak/OIDC login, securely store the resulting credentials, refresh access tokens when possible, and clear credentials on logout.
+
+| Command | Behavior |
+|---|---|
+| `a8s auth login` | Start browser or device-code login and store credentials for the active context. |
+| `a8s auth status` | Show the authenticated identity, token expiry, active context, and detected roles. |
+| `a8s auth logout` | Revoke or clear locally stored credentials for the active context. |
+| `a8s auth verify-email status` | Check authenticated email verification status. |
+| `a8s auth verify-email start` | Request the backend to start email verification. |
+
+The backend remains the authorization authority. A local admin-role check may improve error messages, but every `a8s admin` operation must still be authorized by the backend.
+
+## Context Configuration
+
+Contexts are CLI-local configuration records. They select the backend server, credentials, default namespace, and optional target Kubernetes cluster.
+
+```bash
+a8s context create production --server https://api.example.com --namespace team-a
+a8s context list
+a8s context get production
+a8s context use production
+a8s context update production --target-cluster primary
+a8s context delete production --yes
+```
+
+Recommended context precedence: explicit command flags, active context, environment variables, then built-in defaults. Store context metadata in `~/.a8s/config.yaml` and store secrets in the operating-system credential manager rather than directly in YAML.
+
+## Global Flags
+
+| Flag | Purpose |
+|---|---|
+| `--server` | Override the backend base URL. |
+| `--context` | Run using a named context without changing the active context. |
+| `--namespace` | Override the workspace or Kubernetes namespace. |
+| `--target-cluster` | Select a configured Kubernetes cluster alias. |
+| `--output table|json|yaml` | Select machine-readable or human-readable output. |
+| `--output-file <path>` | Write downloaded certificates, backups, reports, or other binary content to a file. |
+| `--file <path>` | Read a complex request body from YAML or JSON; support `-` for stdin. |
+| `--wait` | Wait until an asynchronous operation reaches a terminal state. |
+| `--timeout <duration>` | Limit request, polling, or streaming duration. |
+| `--yes` | Skip destructive-operation confirmation. |
+| `--dry-run` | Validate and display a request without applying it when supported. |
+| `--verbose` | Print diagnostic request and workflow information without exposing secrets. |
+
+List commands should additionally support pagination, filtering, sorting, and `--all` where the backend supports those behaviors.
+
+## Workflow Commands
+
+Workflow commands should combine multiple endpoints, polling, or WebSocket streams into one operator-friendly action.
+
+| Workflow command | Expected behavior |
+|---|---|
+| `a8s cluster create --file cluster.yaml --wait` | Submit cluster deployment, watch deployment status, and return the final cluster record. |
+| `a8s project deploy --file project.yaml --wait` | Submit deployment, stream build progress, and return the deployed project. |
+| `a8s workspace quota purchase --plan premium --wait` | Create KHQR payment, display payment data, poll payment status, and refresh entitlements. |
+| `a8s backup restore <type> <id> <run-id> --wait` | Start restore, monitor completion, and report the final result. |
+| `a8s doctor` | Check configuration, authentication, backend reachability, workspace readiness, and optional cluster connectivity. |
+
+## Streaming Commands
+
+| Command | Transport |
+|---|---|
+| `a8s logs <pod-name> --follow` | Kubernetes log stream endpoint. |
+| `a8s project logs --follow` | Jenkins log stream and/or Jenkins WebSocket. |
+| `a8s monitoring watch` | `/ws/monitoring/overview`. |
+| `a8s notification watch` | `/ws/notifications`. |
+| `a8s admin events watch` | `/ws/admin/events`. |
+| `a8s cluster watch <release-name>` | Cluster deployment stream endpoint. |
+
+Streaming commands should reconnect with bounded backoff, respect `--timeout`, stop cleanly on Ctrl+C, and print structured records when `--output json` is selected.
+
+## Exit Codes
+
+| Code | Meaning |
+|---|---|
+| `0` | Success. |
+| `1` | General or unexpected failure. |
+| `2` | Invalid command usage or validation failure. |
+| `3` | Authentication required or token refresh failed. |
+| `4` | Authenticated but not authorized. |
+| `5` | Requested resource not found. |
+| `6` | Conflict or invalid resource state. |
+| `7` | Operation timed out. |
+| `8` | Backend unavailable or network failure. |
+
+Machine-readable error output should include an error code, message, HTTP status when available, request ID, and actionable details.
+
+## Security Requirements
+
+- Never print access tokens, refresh tokens, passwords, database credentials, payment payload secrets, or sensitive headers.
+- Prefer the operating-system credential manager for tokens; restrict permissions if a file fallback is required.
+- Require confirmation or `--yes` for delete, deactivate, reject, restore, rollback, password rotation, and destructive admin operations.
+- Validate TLS certificates by default. Any insecure-development override must be explicit and visibly warned.
+- Redact secrets from verbose logs, diagnostic bundles, shell completion, command history guidance, and error messages.
+- Treat backend authorization as mandatory; the CLI must never attempt to bypass role or ownership checks.
+
+## Implementation Status
+
+| Area | Status | Notes |
+|---|---|---|
+| Backend endpoint discovery | Complete | All controller route patterns are scanned by this generator. |
+| CLI endpoint command design | Complete | All CLI-eligible HTTP routes have suggested commands. |
+| Automation-only exclusions | Complete | Internal callbacks, provider webhooks, and Jenkins callbacks remain excluded. |
+| WebSocket command design | Complete | Four WebSocket routes have suggested watch commands. |
+| Go/Cobra implementation | In progress | The current Go project implements only a small legacy command subset. |
+| End-to-end command tests | Pending | Add authenticated integration tests per command group and workflow. |
+
+## Example Operator Workflows
+
+### Deploy and inspect an application
+
+```bash
+a8s project deploy --file project.yaml --wait
+a8s project list
+a8s project get <project-id>
+a8s project logs --follow
+```
+
+### Create and operate a database cluster
+
+```bash
+a8s cluster create --file cluster.yaml --wait
+a8s cluster get <cluster-id>
+a8s cluster metrics <cluster-id>
+a8s cluster certificate <cluster-id> --output-file ca.crt
+```
+
+### Back up and restore a database
+
+```bash
+a8s database backup run <deployment-id>
+a8s database backup download <deployment-id> <run-id> --output-file backup.tar.gz
+a8s database backup restore <deployment-id> <run-id> --wait
+```
+
+### Purchase workspace quota
+
+```bash
+a8s workspace quota pricing
+a8s workspace quota purchase --plan premium --wait
+a8s workspace entitlements
+```
+
+### Diagnose an incident
+
+```bash
+a8s doctor
+a8s monitoring overview
+a8s kubernetes events --warnings-only
+a8s logs <pod-name> --container <container-name> --follow --tail 100
+```
+
+## Known Backend and CLI Limitations
+
+- Payments currently use Bakong KHQR and are exposed only through workspace quota and plan purchase endpoints.
+- `paymentProvider` mentions Stripe fields, but the current controller flow generates Bakong KHQR; do not advertise Stripe until backend support is complete.
+- Payment status is queried by MD5 and currently returns `PENDING`, `PAID`, or `NO_PAYMENT_REQUIRED`.
+- Several deployment and restore operations are asynchronous and require polling or streaming for a complete CLI experience.
+- The CLI must not expose the 10 automation-only callback and webhook routes listed in this catalog.
+- `context`, `doctor`, shell completion, local token storage, and some authentication commands are CLI-only features without direct backend endpoint mappings.
 
 ## admin
 
