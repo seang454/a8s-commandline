@@ -285,7 +285,29 @@ No standalone controller. Console APIs are exposed through `singledb` and `dbclu
 
 ## payments
 
-No standalone controller. Payment and quota-purchase APIs are exposed through `workspaces` endpoints.
+No standalone payment controller. Payments currently support Bakong KHQR purchases for workspace quota and plan upgrades.
+
+### Payment and quota-purchase endpoints
+
+| Method | Endpoint | Suggested CLI command | Purpose |
+|---|---|---|---|
+| `GET` | `/api/v1/workspaces/quota-pricing` | `a8s workspace quota pricing` | Get unit prices and plan prices. |
+| `POST` | `/api/v1/workspaces/quota-requests` | `a8s workspace quota purchase --plan <plan>` | Submit a paid quota request and generate a Bakong KHQR payload. |
+| `GET` | `/api/v1/workspaces/quota-requests/payment-status?md5=<md5>` | `a8s workspace quota payment-status <md5>` | Check payment status and apply the quota upgrade after payment. |
+
+The purchase request accepts `requestedCpu`, `requestedMemory`, `requestedStorage`, `reason`, `isPaid`, `planName`, and `paymentProvider`. Set `isPaid` to `true` and `paymentProvider` to `BAKONG` to generate KHQR.
+
+The purchase response contains `qrString` and `md5`. Use the returned `md5` when polling payment status. Status responses currently include `PENDING`, `PAID`, and `NO_PAYMENT_REQUIRED`.
+
+When payment is confirmed, the backend approves the quota request, applies the workspace quota, activates the subscription for 30 days, and sends a payment receipt notification.
+
+### Related admin endpoints
+
+| Method | Endpoint | Suggested CLI command | Purpose |
+|---|---|---|---|
+| `GET` | `/api/v1/admin/quota-requests` | `a8s admin quota list` | List pending quota and payment-related requests. |
+| `POST` | `/api/v1/admin/quota-requests/{id}/approve` | `a8s admin quota approve <request-id>` | Approve a pending request and apply its quota. |
+| `POST` | `/api/v1/admin/quota-requests/{id}/reject` | `a8s admin quota reject <request-id>` | Reject a pending request. |
 
 ## profile
 
