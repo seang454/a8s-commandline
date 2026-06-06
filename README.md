@@ -1,6 +1,22 @@
 # A8S CLI
 
-A production-grade CLI for your platform API, built with Go + Cobra.
+A Go + Cobra CLI for the A8S platform.
+
+The endpoint mapping and production design are complete. The current Go implementation is an early legacy subset and is being migrated to the resource-first architecture described in [docs/architecture.md](docs/architecture.md).
+
+## Documentation
+
+- [Documentation index](docs/README.md)
+- [Backend API to CLI catalog](docs/backend-api-cli-catalog.md)
+- [Architecture](docs/architecture.md)
+- [Authentication](docs/authentication.md)
+- [Configuration](docs/configuration.md)
+- [Error contract](docs/error-contract.md)
+- [Workflow contracts](docs/workflows.md)
+- [Testing strategy](docs/testing-strategy.md)
+- [Command-reference design](docs/command-reference.md)
+- [OpenAPI compatibility](docs/openapi-compatibility.md)
+- [Release process](docs/release-process.md)
 
 ## Quick Start
 
@@ -15,7 +31,7 @@ cp .a8s.yaml ~/.a8s.yaml
 make build
 ```
 
-### 3. Use
+### 3. Use the current legacy subset
 ```bash
 # List users
 ./a8s list users
@@ -36,11 +52,22 @@ make build
 ./a8s version
 ```
 
-## Configuration Priority
+The planned production syntax is resource-first:
+
+```bash
+a8s project list
+a8s cluster create --file cluster.yaml --wait
+a8s admin user create
+a8s workspace quota purchase --plan premium --wait
+```
+
+## Current Legacy Configuration Priority
 1. CLI flags (`--api-url`, `--token`)
 2. Environment variables (`A8S_API_URL`, `A8S_API_TOKEN`)
 3. Config file (`~/.a8s.yaml`)
 4. Defaults (`http://localhost:8080`)
+
+The production configuration will use named contexts and secure credential storage. See [docs/configuration.md](docs/configuration.md).
 
 ## Build for All Platforms
 ```bash
