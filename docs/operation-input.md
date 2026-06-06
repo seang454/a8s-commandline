@@ -78,6 +78,16 @@ Create a complete file by adding the envelope and using the listed kind.
 The examples show commonly used fields. Each implemented kind must expose all
 backend-supported request fields in its generated schema.
 
+Dense tables are only a quick command index. Detailed user-facing command
+sections should use the clearer format demonstrated by `a8s cluster deploy`:
+
+1. explain what the command does
+2. show the minimal flags command
+3. show minimal and production YAML
+4. describe fields and whether they are required
+5. group related flags by purpose
+6. show file-plus-flag override behavior
+
 Equivalent repeatable flags use this convention:
 
 ```text
@@ -141,55 +151,6 @@ a8s project deploy \
   --auto-deploy \
   --auto-deploy-trigger push \
   --env SPRING_PROFILES_ACTIVE=production \
-  --wait
-```
-
-Database cluster deployment:
-
-```yaml
-# cluster.yaml
-apiVersion: cli.a8s.io/v1alpha1
-kind: ClusterDeployment
-spec:
-  releaseName: orders-cluster
-  projectName: orders
-  cluster:
-    name: orders
-    environment: PRODUCTION
-    platformConfig:
-      targetClusterName: production-primary
-  database:
-    engine: POSTGRESQL
-    enabled: true
-    instances: 3
-    storageSize: 100Gi
-    version: "16"
-    monitoringEnabled: true
-    backup:
-      enabled: true
-      destinationPath: s3://backups/orders
-      credentialSecret: backup-credentials
-      retentionPolicy: 30d
-      schedule: "0 0 * * *"
-```
-
-```bash
-a8s cluster deploy \
-  --release-name orders-cluster \
-  --project-name orders \
-  --name orders \
-  --environment PRODUCTION \
-  --target-cluster production-primary \
-  --engine POSTGRESQL \
-  --instances 3 \
-  --storage-size 100Gi \
-  --version 16 \
-  --monitoring \
-  --backup-enabled \
-  --backup-destination s3://backups/orders \
-  --backup-credential-secret backup-credentials \
-  --backup-retention 30d \
-  --backup-schedule "0 0 * * *" \
   --wait
 ```
 
@@ -294,16 +255,343 @@ resolves them immediately before mapping to the current backend DTO.
 
 ## Database Cluster Mutations
 
-| Command and kind | YAML `spec` example | Equivalent flags |
+### Deploy a Database Cluster
+
+Creates and deploys a managed database cluster.
+
+```text
+a8s cluster deploy
+```
+
+The input has three main sections:
+
+```text
+spec
+|-- releaseName and projectName     Identifies the A8S deployment
+|-- cluster                         Selects and describes the Kubernetes cluster
+`-- database                        Configures the database running in the cluster
+    |-- resource                    Configures CPU and memory
+    `-- backup                      Configures automated backups
+```
+
+Users do not need to provide every available field. Start with the minimal
+input and add production options only when required.
+
+Use YAML for a repeatable production deployment:
+
+```bash
+a8s cluster deploy --file cluster.yaml --wait
+```
+
+Use flags for a quick deployment:
+
+```bash
+a8s cluster deploy \
+  --release-name orders-cluster \
+  --project-name orders \
+  --name orders \
+  --engine POSTGRESQL \
+  --target-cluster production-primary \
+  --wait
+```
+
+Use YAML with flags when only a few values need to change:
+
+```bash
+a8s cluster deploy \
+  --file cluster.yaml \
+  --target-cluster staging-primary \
+  --wait
+```
+
+In this example, the CLI loads everything from `cluster.yaml`, then replaces
+only `targetClusterName` with `staging-primary`.
+
+#### Minimal Cluster YAML
+
+This contains only the main values needed to identify and deploy the cluster:
+
+```yaml
+# cluster.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ClusterDeployment
+
+spec:
+  releaseName: orders-cluster
+  projectName: orders
+
+  cluster:
+    name: orders
+    platformConfig:
+      targetClusterName: production-primary
+
+  database:
+    engine: POSTGRESQL
+```
+
+#### Production Cluster YAML
+
+Add capacity, networking, monitoring, and backup configuration when needed:
+
+```yaml
+# cluster-production.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ClusterDeployment
+
+spec:
+  releaseName: orders-cluster
+  projectName: orders
+
+  cluster:
+    name: orders
+    environment: PRODUCTION
+    notes: Primary orders database cluster
+
+    platformConfig:
+      targetClusterName: production-primary
+
+  database:
+    engine: POSTGRESQL
+    enabled: true
+    instances: 3
+    version: "16"
+
+    storageSize: 100Gi
+    storageClass: longhorn
+
+    externalAccessEnabled: false
+    tlsEnabled: true
+    monitoringEnabled: true
+
+    resource:
+      resourceProfile: MEDIUM
+      cpuRequest: "1"
+      memRequest: 2Gi
+      cpuLimit: "2"
+      memLimit: 4Gi
+
+    backup:
+      enabled: true
+      destinationPath: s3://backups/orders
+      credentialSecret: backup-credentials
+      retentionPolicy: 30d
+      schedule: "0 0 * * *"
+```
+
+#### Cluster Deployment Fields
+
+| Field | Required | Description |
 |---|---|---|
-| `a8s cluster deploy`, `ClusterDeployment` | `{releaseName: orders-cluster, projectName: orders, cluster: {name: orders, environment: PRODUCTION}, database: {engine: POSTGRESQL, enabled: true, instances: 3, storageSize: 100Gi, version: "16", monitoringEnabled: true}}` | `--release-name orders-cluster --project-name orders --name orders --environment PRODUCTION --engine POSTGRESQL --instances 3 --storage-size 100Gi --version 16 --monitoring` |
-| `a8s cluster update <cluster-id>`, `ClusterDeploymentPatch` | `{database: {instances: 5, storageSize: 200Gi, monitoringEnabled: true}}` | `--instances 5 --storage-size 200Gi --monitoring` |
-| `a8s cluster settings update <cluster-id>`, `ClusterSettings` | `{alias: orders, operatorNote: "Primary cluster", failureAlerts: true, maintenanceMode: false, protectFromDelete: true}` | `--alias orders --operator-note "Primary cluster" --failure-alerts --maintenance-mode=false --protect-from-delete` |
-| `a8s cluster upgrade <cluster-id>`, `ClusterUpgrade` | `{version: "17"}` | `--version 17` |
-| `a8s cluster clone-from-backup`, `ClusterClone` | `{sourceClusterId: 11111111-1111-1111-1111-111111111111, backupRunId: 22222222-2222-2222-2222-222222222222, projectName: orders-clone, version: "16", instances: 3, storageSize: 100Gi, monitoringEnabled: true}` | `--source-cluster-id 11111111-1111-1111-1111-111111111111 --backup-run-id 22222222-2222-2222-2222-222222222222 --project-name orders-clone --version 16 --instances 3 --storage-size 100Gi --monitoring` |
-| `a8s cluster backup settings set <cluster-id>`, `ClusterBackupSettings` | `{enabled: true, destinationPath: s3://backups/orders, credentialSecret: backup-credentials, retentionPolicy: 30d, schedule: "0 0 * * *"}` | `--enabled --destination s3://backups/orders --credential-secret backup-credentials --retention 30d --schedule "0 0 * * *"` |
-| `a8s cluster backup settings set --release <release-name>`, `ClusterBackupSettings` | `{enabled: true, destinationPath: s3://backups/orders, credentialSecret: backup-credentials, retentionPolicy: 30d, schedule: "0 0 * * *"}` | `--release orders-cluster --enabled --destination s3://backups/orders --credential-secret backup-credentials --retention 30d --schedule "0 0 * * *"` |
-| `a8s cluster console query <cluster-id>`, `ClusterQuery` | `{query: "SELECT now()"}` | `--query "SELECT now()"` |
+| `spec.releaseName` | Recommended | Kubernetes or Helm release name used to track deployment status. |
+| `spec.projectName` | Yes | A8S project name associated with the cluster. |
+| `spec.cluster.name` | Yes | Human-readable cluster name. |
+| `spec.cluster.environment` | No | Environment classification, such as `DEVELOPMENT`, `STAGING`, or `PRODUCTION`. |
+| `spec.cluster.notes` | No | Operator notes describing the cluster. |
+| `spec.cluster.platformConfig.targetClusterName` | No | Kubernetes target-cluster alias. The active context supplies it when omitted. |
+| `spec.database.engine` | Yes | Database engine, such as `POSTGRESQL`, `MONGODB`, `MYSQL`, `REDIS`, or `CASSANDRA`. |
+| `spec.database.instances` | No | Number of database instances. Support depends on the selected engine. |
+| `spec.database.version` | No | Requested database version. |
+| `spec.database.storageSize` | No | Persistent storage size, such as `100Gi`. |
+| `spec.database.storageClass` | No | Kubernetes storage class, such as `longhorn`. |
+| `spec.database.externalAccessEnabled` | No | Exposes the database outside its Kubernetes cluster when supported. |
+| `spec.database.tlsEnabled` | No | Enables TLS for database connections. |
+| `spec.database.monitoringEnabled` | No | Enables database monitoring integration. |
+| `spec.database.resource` | No | CPU and memory request, limit, and resource-profile settings. |
+| `spec.database.backup` | No | Automated backup destination, credentials reference, retention, and schedule. |
+
+The field-to-flag mapping follows predictable names:
+
+```text
+spec.releaseName                            -> --release-name
+spec.projectName                            -> --project-name
+spec.cluster.name                           -> --name
+spec.cluster.environment                    -> --environment
+spec.cluster.platformConfig.targetClusterName -> --target-cluster
+spec.database.engine                        -> --engine
+spec.database.instances                     -> --instances
+spec.database.storageSize                   -> --storage-size
+spec.database.monitoringEnabled             -> --monitoring
+spec.database.backup.schedule               -> --backup-schedule
+```
+
+#### Cluster Deployment Flags
+
+Identity and target:
+
+```text
+--release-name <name>
+--project-name <name>
+--name <cluster-name>
+--environment DEVELOPMENT|STAGING|PRODUCTION
+--target-cluster <alias>
+--notes <text>
+```
+
+Database capacity:
+
+```text
+--engine POSTGRESQL|MONGODB|MYSQL|REDIS|CASSANDRA
+--instances <number>
+--version <version>
+--storage-size <quantity>
+--storage-class <name>
+```
+
+Features:
+
+```text
+--external-access
+--tls
+--monitoring
+--resource-profile <profile>
+--cpu-request <quantity>
+--memory-request <quantity>
+--cpu-limit <quantity>
+--memory-limit <quantity>
+```
+
+Backup:
+
+```text
+--backup-enabled
+--backup-destination <path>
+--backup-credential-secret <secret-name>
+--backup-retention <duration>
+--backup-schedule <cron>
+```
+
+The active context supplies `namespace` and may supply `targetClusterName`.
+Users can override them with `--namespace` and `--target-cluster`.
+
+### Update Cluster Deployment
+
+Changes configurable deployment values for an existing cluster.
+
+```yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ClusterDeploymentPatch
+spec:
+  database:
+    instances: 5
+    storageSize: 200Gi
+    monitoringEnabled: true
+```
+
+```bash
+a8s cluster update cluster-123 --file cluster-patch.yaml --wait
+
+a8s cluster update cluster-123 \
+  --instances 5 \
+  --storage-size 200Gi \
+  --monitoring \
+  --wait
+```
+
+### Update Cluster Operator Settings
+
+Changes A8S operator metadata and protection settings. It does not change
+database capacity.
+
+```yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ClusterSettings
+spec:
+  alias: orders
+  operatorNote: Primary production cluster
+  failureAlerts: true
+  maintenanceMode: false
+  protectFromDelete: true
+```
+
+```bash
+a8s cluster settings update cluster-123 --file cluster-settings.yaml
+
+a8s cluster settings update cluster-123 \
+  --alias orders \
+  --failure-alerts \
+  --protect-from-delete
+```
+
+### Upgrade Cluster Version
+
+```yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ClusterUpgrade
+spec:
+  version: "17"
+```
+
+```bash
+a8s cluster upgrade cluster-123 --file cluster-upgrade.yaml --wait
+a8s cluster upgrade cluster-123 --version 17 --wait
+```
+
+### Clone Cluster from Backup
+
+```yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ClusterClone
+spec:
+  sourceClusterId: 11111111-1111-1111-1111-111111111111
+  backupRunId: 22222222-2222-2222-2222-222222222222
+  projectName: orders-clone
+  releaseName: orders-clone
+  version: "16"
+  instances: 3
+  storageSize: 100Gi
+  monitoringEnabled: true
+```
+
+```bash
+a8s cluster clone-from-backup --file cluster-clone.yaml --wait
+
+a8s cluster clone-from-backup \
+  --source-cluster-id 11111111-1111-1111-1111-111111111111 \
+  --backup-run-id 22222222-2222-2222-2222-222222222222 \
+  --project-name orders-clone \
+  --wait
+```
+
+### Configure Cluster Backup
+
+```yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ClusterBackupSettings
+spec:
+  enabled: true
+  destinationPath: s3://backups/orders
+  credentialSecret: backup-credentials
+  retentionPolicy: 30d
+  schedule: "0 0 * * *"
+```
+
+```bash
+a8s cluster backup settings set cluster-123 --file cluster-backup.yaml
+
+a8s cluster backup settings set cluster-123 \
+  --enabled \
+  --destination s3://backups/orders \
+  --credential-secret backup-credentials \
+  --retention 30d \
+  --schedule "0 0 * * *"
+```
+
+Use `--release <release-name>` instead of a cluster ID when configuring a
+deployment that has not yet produced a persistent cluster record.
+
+### Run Cluster Console Query
+
+```yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ClusterQuery
+spec:
+  query: SELECT now()
+```
+
+```bash
+a8s cluster console query cluster-123 --file query.yaml
+a8s cluster console query cluster-123 --query "SELECT now()"
+```
 
 Cluster secrets must use secret references or secret stdin flags. Do not place
 database passwords or Cloudflare tokens directly in cluster operation files.
