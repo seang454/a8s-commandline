@@ -376,6 +376,32 @@ a8s project deploy --file project.yaml --wait
 a8s project deploy --name shop-api --source-type git --repo-url https://github.com/acme/shop-api.git --repo-full-name acme/shop-api --branch main --app-port 8080 --architecture monolithic --auto-deploy --auto-deploy-trigger push --wait
 ```
 
+The backend and frontend also support ZIP source deployment. The ZIP is a
+domain-content file, while the YAML contains the deployment metadata:
+
+```yaml
+# project-zip.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ProjectDeployment
+spec:
+  projectName: shop-api
+  sourceType: zip
+  architectureType: monolithic
+  appPort: 8080
+  envVars:
+    - name: SPRING_PROFILES_ACTIVE
+      value: production
+      secret: false
+```
+
+```bash
+a8s project deploy --file project-zip.yaml --source-archive shop-api.zip --wait
+a8s project deploy --name shop-api --source-type zip --architecture monolithic --app-port 8080 --source-archive shop-api.zip --env SPRING_PROFILES_ACTIVE=production --wait
+```
+
+`--source-archive` is separate from `--file` because the archive is uploaded as
+multipart content rather than decoded as an operation document.
+
 #### Set Project Domain
 
 ```yaml
@@ -528,6 +554,7 @@ a8s project release rollback project-123 release-123 --build-number 42 --framewo
 | `a8s microservice env set <project-id> <service-id>`, `MicroserviceEnvironment` | `{envVars: [{name: SPRING_PROFILES_ACTIVE, value: production, secret: false}], runtimeConfigFile: {fileName: application.yaml, content: "server:\n  port: 8080"}}` | `--env SPRING_PROFILES_ACTIVE=production --runtime-config-file application.yaml` |
 | `a8s microservice webhook update <project-id>`, `MicroserviceWebhook` | `{name: shop-webhook, branch: main, autoDeployEnabled: true, autoDeployTrigger: push, releaseTagPattern: "v*", releaseTriggerMode: tag}` | `--name shop-webhook --branch main --auto-deploy --trigger push --release-tag-pattern "v*" --release-trigger-mode tag` |
 | `a8s microservice detect --repo`, `MicroserviceDetection` | `{repoUrl: https://github.com/acme/shop.git, branch: main, githubTokenFrom: {env: GITHUB_TOKEN}}` | `--repo https://github.com/acme/shop.git --branch main --github-token-stdin` |
+| `a8s microservice detect --source-archive <path>`, `MicroserviceUploadDetection` | `{sourceName: shop-source}` | `--source-name shop-source --source-archive shop-source.zip` |
 
 Complex service definitions should use `--service-file` rather than dozens of
 flattened service flags. The top-level operation still supports both forms.
@@ -675,6 +702,33 @@ a8s microservice detect --file microservice-detection.yaml
 a8s microservice detect --repo https://github.com/acme/shop.git --branch main --github-token-env GITHUB_TOKEN
 ```
 
+The backend also supports uploaded source detection:
+
+```yaml
+# microservice-upload-detection.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: MicroserviceUploadDetection
+spec:
+  sourceName: shop-source
+```
+
+```bash
+a8s microservice detect --file microservice-upload-detection.yaml --source-archive shop-source.zip
+a8s microservice detect --source-name shop-source --source-archive shop-source.zip
+```
+
+For multiple uploaded files, support repeatable `--source-file` and
+`--source-path` flags while preserving their order:
+
+```bash
+a8s microservice detect \
+  --source-name shop-source \
+  --source-file services/api/pom.xml \
+  --source-path services/api/pom.xml \
+  --source-file services/web/package.json \
+  --source-path services/web/package.json
+```
+
 ## Single Database Mutations
 
 | Command and kind | YAML `spec` example | Equivalent flags |
@@ -719,6 +773,45 @@ spec:
 ```bash
 a8s database deploy --file database.yaml --wait
 a8s database deploy --release-name payments-db --project-name payments --engine postgresql --deployment-mode single --database-name payments --username app --version 16 --size-profile small --storage-size 20Gi --network-policy --tls --require-ssl --wait
+```
+
+Provide database credentials securely. The backend accepts either a resolved
+password or an existing authentication secret:
+
+```yaml
+# database-with-secret.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: DatabaseDeployment
+spec:
+  projectName: payments
+  engine: postgresql
+  deploymentMode: single
+  databaseName: payments
+  version: "16"
+  existingAuthSecretName: payments-database-credentials
+  tls:
+    enabled: true
+    requireSsl: true
+    existingSecretName: payments-database-tls
+    includeCa: true
+```
+
+```bash
+a8s database deploy --file database-with-secret.yaml --wait
+a8s database deploy --project-name payments --engine postgresql --deployment-mode single --database-name payments --version 16 --existing-auth-secret payments-database-credentials --tls --require-ssl --tls-secret payments-database-tls --include-ca --wait
+```
+
+For a new password, use a secure reference or secret input flag:
+
+```yaml
+spec:
+  passwordFrom:
+    env: A8S_DATABASE_PASSWORD
+```
+
+```bash
+a8s database deploy --file database.yaml --password-env A8S_DATABASE_PASSWORD --wait
+a8s database deploy --file database.yaml --password-stdin --wait
 ```
 
 #### Update Database
@@ -1530,6 +1623,50 @@ a8s scan start --file image-scan.yaml --wait
 a8s scan start --source-kind image --image nginx:1.27 --force-rescan=false --wait
 ```
 
+Private-registry scan:
+
+```yaml
+# private-image-scan.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ImageScan
+spec:
+  sourceKind: registry
+  registryUrl: registry.example.com
+  imageName: platform/shop-api
+  imageTag: "1.0.0"
+  privateRegistry: true
+  username: scanner
+  passwordFrom:
+    env: REGISTRY_PASSWORD
+  forceRescan: true
+```
+
+```bash
+a8s scan start --file private-image-scan.yaml --wait
+a8s scan start --source-kind registry --registry-url registry.example.com --image-name platform/shop-api --image-tag 1.0.0 --private-registry --username scanner --password-env REGISTRY_PASSWORD --force-rescan --wait
+```
+
+Build and scan from a Git repository:
+
+```yaml
+# git-image-scan.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ImageScan
+spec:
+  sourceKind: repository
+  repositoryUrl: https://github.com/acme/shop-api.git
+  branchOrTag: main
+  dockerfilePath: Dockerfile
+  buildContext: .
+  targetImageName: shop-api:scan
+  privateRepository: false
+```
+
+```bash
+a8s scan start --file git-image-scan.yaml --wait
+a8s scan start --source-kind repository --repository-url https://github.com/acme/shop-api.git --branch-or-tag main --dockerfile Dockerfile --build-context . --target-image shop-api:scan --wait
+```
+
 #### Run Benchmark
 
 ```yaml
@@ -1859,14 +1996,80 @@ They are not fields in an operation document.
 Some commands consume files that are not YAML/JSON operation documents:
 
 ```bash
-a8s project env import project-123 --file .env
-a8s profile avatar upload --file avatar.png
-a8s admin docs update --file documentation.md
+a8s project env import project-123 --env-file .env
+a8s microservice env import project-123 service-123 --env-file .env
+a8s profile avatar upload --avatar-file avatar.png
+a8s admin docs update --content-file documentation.md --path guides/deploy.md --message "Update deploy guide"
+a8s microservice detect --source-archive source.zip
 a8s cluster console query cluster-123 --query-file query.sql
 ```
 
 Use a distinct flag such as `--request-file` if a command must accept both an
 operation document and a domain-content file, avoiding ambiguity.
+
+Recommended file-flag meanings:
+
+| Flag | Meaning |
+|---|---|
+| `--file <yaml-or-json>` | Typed operation document. |
+| `--env-file <path>` | Dotenv content imported into a project or service. |
+| `--source-archive <path>` | ZIP archive containing application source. |
+| `--source-file <path>` | Individual uploaded source file; repeatable. |
+| `--service-file <path>` | One microservice service-definition document. |
+| `--content-file <path>` | Documentation or runtime configuration content. |
+| `--avatar-file <path>` | Profile image upload. |
+| `--query-file <path>` | SQL or database-console query content. |
+| `--output-file <path>` | Destination for downloaded content. |
+
+Do not overload `--file` for raw content because users must always be able to
+tell whether the CLI will parse a file as an operation document or upload its
+bytes unchanged.
+
+## Final Input Coverage Audit
+
+The backend and frontend mutation flows were compared against this document.
+All currently configurable user-facing request payloads now have YAML and
+equivalent-flag examples.
+
+The following commands intentionally do not use operation YAML because their
+backend operations have no configurable request payload:
+
+```text
+auth verify-email start
+auth onboarding start
+workspace bootstrap
+admin project restore
+admin user reactivate
+admin gitops app abort
+admin gitops app retry
+admin gitops app sync
+admin quota approve
+admin quota reject
+admin docs publish
+git sync-token
+database backup run
+database backup restore
+database backup restore cancel
+backup trigger
+backup restore
+backup restore cancel
+cluster console test
+database console test
+microservice redeploy
+project domain sync
+project redeploy
+project webhook rotate
+notification read
+profile account deactivate
+profile account reactivate
+sonarqube access
+```
+
+These commands continue to use positional identifiers and operational flags
+such as `--wait`, `--timeout`, and `--yes`.
+
+Internal callbacks, Jenkins callbacks, and provider webhook receivers remain
+excluded from the user CLI entirely.
 
 ## Operation Document Shape
 

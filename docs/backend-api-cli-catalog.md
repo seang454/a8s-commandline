@@ -469,7 +469,7 @@ No standalone controller. Console APIs are exposed through `singledb` and `dbclu
 | `GET` | `/api/v1/projects/microservices/{projectId}/webhook` | `a8s microservice webhook get <project-id>` | `MicroserviceProjectController` |
 | `POST` | `/api/v1/projects/microservices/{projectId}/webhook` | `a8s microservice webhook update <project-id>` | `MicroserviceProjectController` |
 | `POST` | `/api/v1/projects/microservices/detect` | `a8s microservice detect --repo` | `MicroserviceProjectController` |
-| `POST` | `/api/v1/projects/microservices/detect/upload` | `a8s microservice detect --upload` | `MicroserviceProjectController` |
+| `POST` | `/api/v1/projects/microservices/detect/upload` | `a8s microservice detect --source-archive <path>` | `MicroserviceProjectController` |
 
 ## monitoring
 
