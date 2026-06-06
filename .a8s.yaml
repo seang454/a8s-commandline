@@ -1,0 +1,5 @@
+# A8S CLI Configuration
+# Place this file at ~/.a8s.yaml
+
+api_url: http://localhost:8080
+api_token: your-api-token-here
