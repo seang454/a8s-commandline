@@ -88,6 +88,10 @@ sections should use the clearer format demonstrated by `a8s cluster deploy`:
 5. group related flags by purpose
 6. show file-plus-flag override behavior
 
+Every command listed in a `Command and kind | YAML spec example | Equivalent
+flags` table has a real copy-ready YAML document and complete command directly
+below that table. Inline table values are summaries only.
+
 Equivalent repeatable flags use this convention:
 
 ```text
@@ -176,6 +180,41 @@ a8s context create production --file context.yaml
 a8s context update production --file context-patch.yaml
 ```
 
+### Real Context Examples
+
+#### Create Context
+
+```yaml
+# context.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: Context
+spec:
+  server: https://api.a8s.example.com
+  namespace: ns-team
+  targetCluster: primary
+```
+
+```bash
+a8s context create production --file context.yaml
+a8s context create production --server https://api.a8s.example.com --namespace ns-team --target-cluster primary
+```
+
+#### Update Context
+
+```yaml
+# context-patch.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ContextPatch
+spec:
+  namespace: ns-prod
+  targetCluster: prod-primary
+```
+
+```bash
+a8s context update production --file context-patch.yaml
+a8s context update production --namespace ns-prod --target-cluster prod-primary
+```
+
 ## Workspace, Profile, and Integration Mutations
 
 | Command and kind | YAML `spec` example | Equivalent flags |
@@ -196,6 +235,111 @@ Attachment files for quota requests are separate from operation input:
 
 ```bash
 a8s workspace quota request --file quota.yaml --attachment evidence.pdf
+```
+
+### Real Workspace, Profile, and Integration Examples
+
+#### Request Workspace Quota
+
+```yaml
+# quota-request.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: WorkspaceQuotaRequest
+spec:
+  requestedCpu: "4"
+  requestedMemory: 8Gi
+  requestedStorage: 100Gi
+  reason: Production workload
+  isPaid: false
+  planName: Free
+```
+
+```bash
+a8s workspace quota request --file quota-request.yaml
+a8s workspace quota request --cpu 4 --memory 8Gi --storage 100Gi --reason "Production workload" --plan Free
+```
+
+#### Purchase Workspace Quota
+
+```yaml
+# quota-purchase.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: WorkspaceQuotaPurchase
+spec:
+  requestedCpu: "8"
+  requestedMemory: 16Gi
+  requestedStorage: 200Gi
+  reason: Production upgrade
+  isPaid: true
+  planName: Premium
+  paymentProvider: BAKONG
+```
+
+```bash
+a8s workspace quota purchase --file quota-purchase.yaml --wait
+a8s workspace quota purchase --cpu 8 --memory 16Gi --storage 200Gi --reason "Production upgrade" --plan Premium --payment-provider BAKONG --wait
+```
+
+#### Update Profile
+
+```yaml
+# profile.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ProfileUpdate
+spec:
+  personal:
+    firstName: Dara
+    lastName: Sok
+    displayName: Dara
+    email: dara@example.com
+    jobTitle: Engineer
+    department: Platform
+    bio: ""
+  locale:
+    city: Phnom Penh
+    country: Cambodia
+    timezone: Asia/Phnom_Penh
+    language: en
+    dateFormat: yyyy-MM-dd
+```
+
+```bash
+a8s profile update --file profile.yaml
+a8s profile update --first-name Dara --last-name Sok --display-name Dara --email dara@example.com --job-title Engineer --department Platform --city "Phnom Penh" --country Cambodia --timezone Asia/Phnom_Penh --language en --date-format yyyy-MM-dd
+```
+
+#### Connect Git Provider
+
+```yaml
+# git-connection.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: GitProviderConnection
+spec:
+  accessTokenFrom:
+    env: GITHUB_TOKEN
+  accessLevel: repository
+  grantedScopes: repo,read:user
+```
+
+```bash
+a8s git connect github --file git-connection.yaml
+a8s git connect github --access-token-env GITHUB_TOKEN --access-level repository --granted-scopes repo,read:user
+```
+
+#### Sync DefectDojo Token
+
+```yaml
+# defectdojo-token.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: DefectDojoToken
+spec:
+  apiTokenFrom:
+    env: DEFECTDOJO_API_TOKEN
+```
+
+```bash
+a8s defectdojo token sync project-123 --file defectdojo-token.yaml
+a8s defectdojo token sync project-123 --api-token-env DEFECTDOJO_API_TOKEN
 ```
 
 ## Monolithic Project Mutations
@@ -221,6 +365,158 @@ a8s project domain set project-123 --file domain.yaml
 The CLI must derive `userId` from the authenticated session. Users must not
 provide backend ownership IDs for ordinary project deployment.
 
+### Real Monolithic Project Examples
+
+#### Deploy Project
+
+Use the complete `project.yaml` example in the copy-ready examples section.
+
+```bash
+a8s project deploy --file project.yaml --wait
+a8s project deploy --name shop-api --source-type git --repo-url https://github.com/acme/shop-api.git --repo-full-name acme/shop-api --branch main --app-port 8080 --architecture monolithic --auto-deploy --auto-deploy-trigger push --wait
+```
+
+#### Set Project Domain
+
+```yaml
+# project-domain.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ProjectDomain
+spec:
+  customDomain: api.example.com
+```
+
+```bash
+a8s project domain set project-123 --file project-domain.yaml
+a8s project domain set project-123 --domain api.example.com
+```
+
+#### Connect Project Repository
+
+```yaml
+# repository-connection.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ProjectRepositoryConnection
+spec:
+  repoProvider: github
+  repoUrl: https://github.com/acme/shop-api.git
+  repoFullName: acme/shop-api
+  branch: main
+  autoDeployEnabled: true
+  autoDeployTrigger: push
+```
+
+```bash
+a8s project repository connect project-123 --file repository-connection.yaml
+a8s project repository connect project-123 --provider github --repo-url https://github.com/acme/shop-api.git --repo-full-name acme/shop-api --branch main --auto-deploy --auto-deploy-trigger push
+```
+
+#### Update Project Settings
+
+```yaml
+# project-settings.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ProjectSettings
+spec:
+  alias: shop
+  operatorNote: Critical service
+  failureAlerts: true
+  maintenanceMode: false
+  protectFromDelete: true
+```
+
+```bash
+a8s project settings update project-123 --file project-settings.yaml
+a8s project settings update project-123 --alias shop --operator-note "Critical service" --failure-alerts --maintenance-mode=false --protect-from-delete
+```
+
+#### Set Project Environment
+
+```yaml
+# project-environment.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ProjectEnvironment
+spec:
+  envVars:
+    - name: SPRING_PROFILES_ACTIVE
+      value: production
+      secret: false
+```
+
+```bash
+a8s project env set project-123 --file project-environment.yaml
+a8s project env set project-123 --env SPRING_PROFILES_ACTIVE=production
+```
+
+#### Configure Auto Deploy
+
+```yaml
+# project-auto-deploy.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ProjectAutoDeploy
+spec:
+  enabled: true
+  branch: main
+  autoDeployTrigger: push
+  releaseTagPattern: "v*"
+```
+
+```bash
+a8s project auto-deploy set project-123 --file project-auto-deploy.yaml
+a8s project auto-deploy set project-123 --enabled --branch main --trigger push --release-tag-pattern "v*"
+```
+
+#### Create Project Webhook
+
+```yaml
+# project-webhook.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ProjectWebhook
+spec:
+  name: shop-webhook
+  branch: main
+  autoDeployEnabled: true
+  autoDeployTrigger: push
+  createOnProvider: true
+```
+
+```bash
+a8s project webhook create project-123 --file project-webhook.yaml
+a8s project webhook create project-123 --name shop-webhook --branch main --auto-deploy --trigger push --create-on-provider
+```
+
+#### Roll Back Project
+
+```yaml
+# project-rollback.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ProjectRollback
+spec:
+  releaseId: 11111111-1111-1111-1111-111111111111
+```
+
+```bash
+a8s project rollback project-123 --file project-rollback.yaml --yes --wait
+a8s project rollback project-123 --release-id 11111111-1111-1111-1111-111111111111 --yes --wait
+```
+
+#### Roll Back Project Release
+
+```yaml
+# release-rollback.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ProjectReleaseRollback
+spec:
+  buildNumber: 42
+  framework: spring
+  statusMessage: Operator rollback
+```
+
+```bash
+a8s project release rollback project-123 release-123 --file release-rollback.yaml --yes --wait
+a8s project release rollback project-123 release-123 --build-number 42 --framework spring --status-message "Operator rollback" --yes --wait
+```
+
 ## Microservice Project Mutations
 
 | Command and kind | YAML `spec` example | Equivalent flags |
@@ -235,6 +531,149 @@ provide backend ownership IDs for ordinary project deployment.
 
 Complex service definitions should use `--service-file` rather than dozens of
 flattened service flags. The top-level operation still supports both forms.
+
+### Real Microservice Examples
+
+#### Deploy Microservice Project
+
+```yaml
+# microservices.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: MicroserviceDeployment
+spec:
+  projectName: shop
+  branch: main
+  services:
+    - name: api
+      repoUrl: https://github.com/acme/shop.git
+      repoFullName: acme/shop
+      path: services/api
+      appPort: 8080
+      serviceType: backend
+      exposePublic: true
+```
+
+```bash
+a8s microservice deploy --file microservices.yaml --wait
+a8s microservice deploy --project-name shop --branch main --service-file api-service.yaml --wait
+```
+
+For flag-based deployment, `api-service.yaml` contains one service object.
+
+#### Apply Microservice Canvas
+
+```yaml
+# canvas.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: MicroserviceCanvas
+spec:
+  branch: main
+  services:
+    - name: api
+      repoUrl: https://github.com/acme/shop.git
+      repoFullName: acme/shop
+      path: services/api
+      appPort: 8080
+```
+
+```bash
+a8s microservice apply project-123 --file canvas.yaml --wait
+a8s microservice apply project-123 --branch main --service-file api-service.yaml --wait
+```
+
+#### Update Microservice Domains
+
+```yaml
+# microservice-domains.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: MicroserviceDomains
+spec:
+  services:
+    - serviceId: 11111111-1111-1111-1111-111111111111
+      customDomain: api.example.com
+      platformSubdomain: api
+```
+
+```bash
+a8s microservice domains update project-123 --file microservice-domains.yaml
+a8s microservice domains update project-123 --service-domain 11111111-1111-1111-1111-111111111111=api.example.com --service-subdomain 11111111-1111-1111-1111-111111111111=api
+```
+
+#### Roll Back Microservice Project
+
+```yaml
+# microservice-rollback.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: MicroserviceRollback
+spec:
+  snapshotId: snapshot-123
+```
+
+```bash
+a8s microservice rollback project-123 --file microservice-rollback.yaml --yes --wait
+a8s microservice rollback project-123 --snapshot-id snapshot-123 --yes --wait
+```
+
+#### Set Microservice Environment
+
+```yaml
+# microservice-environment.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: MicroserviceEnvironment
+spec:
+  envVars:
+    - name: SPRING_PROFILES_ACTIVE
+      value: production
+      secret: false
+  runtimeConfigFile:
+    fileName: application.yaml
+    content: |
+      server:
+        port: 8080
+```
+
+```bash
+a8s microservice env set project-123 service-123 --file microservice-environment.yaml
+a8s microservice env set project-123 service-123 --env SPRING_PROFILES_ACTIVE=production --runtime-config-file application.yaml
+```
+
+#### Update Microservice Webhook
+
+```yaml
+# microservice-webhook.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: MicroserviceWebhook
+spec:
+  name: shop-webhook
+  branch: main
+  autoDeployEnabled: true
+  autoDeployTrigger: push
+  releaseTagPattern: "v*"
+  releaseTriggerMode: tag
+```
+
+```bash
+a8s microservice webhook update project-123 --file microservice-webhook.yaml
+a8s microservice webhook update project-123 --name shop-webhook --branch main --auto-deploy --trigger push --release-tag-pattern "v*" --release-trigger-mode tag
+```
+
+#### Detect Microservices from Repository
+
+```yaml
+# microservice-detection.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: MicroserviceDetection
+spec:
+  repoUrl: https://github.com/acme/shop.git
+  branch: main
+  githubTokenFrom:
+    env: GITHUB_TOKEN
+```
+
+```bash
+a8s microservice detect --file microservice-detection.yaml
+a8s microservice detect --repo https://github.com/acme/shop.git --branch main --github-token-env GITHUB_TOKEN
+```
 
 ## Single Database Mutations
 
@@ -252,6 +691,173 @@ flattened service flags. The top-level operation still supports both forms.
 
 Secret values shown as `passwordFrom` are CLI-level secure references. The CLI
 resolves them immediately before mapping to the current backend DTO.
+
+### Real Single Database Examples
+
+#### Deploy Database
+
+```yaml
+# database.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: DatabaseDeployment
+spec:
+  releaseName: payments-db
+  projectName: payments
+  engine: postgresql
+  deploymentMode: single
+  databaseName: payments
+  username: app
+  version: "16"
+  sizeProfile: small
+  storageSize: 20Gi
+  networkPolicyEnabled: true
+  tls:
+    enabled: true
+    requireSsl: true
+```
+
+```bash
+a8s database deploy --file database.yaml --wait
+a8s database deploy --release-name payments-db --project-name payments --engine postgresql --deployment-mode single --database-name payments --username app --version 16 --size-profile small --storage-size 20Gi --network-policy --tls --require-ssl --wait
+```
+
+#### Update Database
+
+```yaml
+# database-patch.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: DatabaseDeploymentPatch
+spec:
+  sizeProfile: medium
+  networkPolicyEnabled: true
+  tls:
+    enabled: true
+    requireSsl: true
+```
+
+```bash
+a8s database update db-123 --file database-patch.yaml --wait
+a8s database update db-123 --size-profile medium --network-policy --tls --require-ssl --wait
+```
+
+#### Update Database Settings
+
+```yaml
+# database-settings.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: DatabaseSettings
+spec:
+  alias: payments
+  operatorNote: Primary database
+  failureAlerts: true
+  maintenanceMode: false
+  protectFromDelete: true
+```
+
+```bash
+a8s database settings update db-123 --file database-settings.yaml
+a8s database settings update db-123 --alias payments --operator-note "Primary database" --failure-alerts --maintenance-mode=false --protect-from-delete
+```
+
+#### Upgrade Database
+
+```yaml
+# database-upgrade.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: DatabaseUpgrade
+spec:
+  version: "17"
+```
+
+```bash
+a8s database upgrade db-123 --file database-upgrade.yaml --wait
+a8s database upgrade db-123 --version 17 --wait
+```
+
+#### Clone Database from Backup
+
+```yaml
+# database-clone.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: DatabaseClone
+spec:
+  sourceDeploymentId: 11111111-1111-1111-1111-111111111111
+  backupRunId: 22222222-2222-2222-2222-222222222222
+  projectName: payments-clone
+  databaseName: payments
+  version: "16"
+  storageSize: 20Gi
+```
+
+```bash
+a8s database clone-from-backup --file database-clone.yaml --wait
+a8s database clone-from-backup --source-deployment-id 11111111-1111-1111-1111-111111111111 --backup-run-id 22222222-2222-2222-2222-222222222222 --project-name payments-clone --database-name payments --version 16 --storage-size 20Gi --wait
+```
+
+#### Rotate and Verify Database Password
+
+```yaml
+# database-password.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: DatabasePasswordRotation
+spec:
+  passwordFrom:
+    env: A8S_NEW_DATABASE_PASSWORD
+```
+
+```bash
+a8s database rotate-password db-123 --file database-password.yaml --wait
+a8s database rotate-password db-123 --password-env A8S_NEW_DATABASE_PASSWORD --wait
+```
+
+```yaml
+# database-password-verification.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: DatabasePasswordVerification
+spec:
+  passwordFrom:
+    env: A8S_DATABASE_PASSWORD
+```
+
+```bash
+a8s database verify-password db-123 --file database-password-verification.yaml
+a8s database verify-password db-123 --password-env A8S_DATABASE_PASSWORD
+```
+
+#### Run Database Query
+
+```yaml
+# database-query.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: DatabaseQuery
+spec:
+  query: SELECT now()
+```
+
+```bash
+a8s database console query db-123 --file database-query.yaml
+a8s database console query db-123 --query "SELECT now()"
+```
+
+#### Configure Database Backup
+
+```yaml
+# database-backup.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: DatabaseBackupSettings
+spec:
+  enabled: true
+  destinationPath: s3://backups/payments
+  credentialSecret: backup-credentials
+  retentionPolicy: 30d
+  schedule: "0 0 * * *"
+  scheduleStartAt: "2026-06-06T00:00:00Z"
+```
+
+```bash
+a8s database backup settings set db-123 --file database-backup.yaml
+a8s database backup settings set db-123 --enabled --destination s3://backups/payments --credential-secret backup-credentials --retention 30d --schedule "0 0 * * *" --schedule-start-at 2026-06-06T00:00:00Z
+```
 
 ## Database Cluster Mutations
 
@@ -886,6 +1492,140 @@ database passwords or Cloudflare tokens directly in cluster operation files.
 | `a8s alert user-config set`, `UserAlertConfig` | `{quotaAlertsEnabled: true, globalSecurityAlertsEnabled: true}` | `--quota-alerts --global-security-alerts` |
 | `a8s notification preferences set`, `NotificationPreferences` | `{buildFailures: true, rolloutReady: true, vulnerabilityFindings: true, weeklyDigest: false}` | `--build-failures --rollout-ready --vulnerability-findings --weekly-digest=false` |
 
+### Real Backup, Quality, and Alert Examples
+
+#### Configure Unified Backup
+
+```yaml
+# backup-settings.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: BackupSettings
+spec:
+  enabled: true
+  destinationPath: s3://backups/resource
+  credentialSecret: backup-credentials
+  retentionPolicy: 30d
+  schedule: "0 0 * * *"
+```
+
+```bash
+a8s backup settings set database db-123 --file backup-settings.yaml
+a8s backup settings set database db-123 --enabled --destination s3://backups/resource --credential-secret backup-credentials --retention 30d --schedule "0 0 * * *"
+```
+
+#### Start Image Scan
+
+```yaml
+# image-scan.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ImageScan
+spec:
+  sourceKind: image
+  imageRef: nginx:1.27
+  forceRescan: false
+```
+
+```bash
+a8s scan start --file image-scan.yaml --wait
+a8s scan start --source-kind image --image nginx:1.27 --force-rescan=false --wait
+```
+
+#### Run Benchmark
+
+```yaml
+# benchmark.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: BenchmarkRun
+spec:
+  concurrency: 20
+  totalRequests: 1000
+  targetPath: /api/health
+  method: GET
+  headers:
+    Accept: application/json
+```
+
+```bash
+a8s benchmark run project-123 --file benchmark.yaml --wait
+a8s benchmark run project-123 --concurrency 20 --total-requests 1000 --target-path /api/health --method GET --header Accept=application/json --wait
+```
+
+#### Create or Update Alert Channel
+
+```yaml
+# alert-channel.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: AlertChannel
+spec:
+  name: operations
+  type: telegram
+  credentialFrom:
+    env: TELEGRAM_BOT_TOKEN
+  secondaryCredentialFrom:
+    env: TELEGRAM_CHAT_ID
+  targetProject: shop-api
+```
+
+```bash
+a8s alert channel create --file alert-channel.yaml
+a8s alert channel create --name operations --type telegram --credential-env TELEGRAM_BOT_TOKEN --secondary-credential-env TELEGRAM_CHAT_ID --target-project shop-api
+
+a8s alert channel update channel-123 --file alert-channel.yaml
+a8s alert channel update channel-123 --name operations --type telegram --credential-env TELEGRAM_BOT_TOKEN --secondary-credential-env TELEGRAM_CHAT_ID --target-project shop-api
+```
+
+#### Configure Project and User Alerts
+
+```yaml
+# project-alerts.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: ProjectAlertConfig
+spec:
+  telegramEnabled: true
+  emailEnabled: true
+  backupAlertsEnabled: true
+  securityAlertsEnabled: true
+  telegramChannelName: operations
+  emailAddress: ops@example.com
+```
+
+```bash
+a8s alert project-config set project-123 --file project-alerts.yaml
+a8s alert project-config set project-123 --telegram-enabled --email-enabled --backup-alerts --security-alerts --telegram-channel operations --email-address ops@example.com
+```
+
+```yaml
+# user-alerts.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: UserAlertConfig
+spec:
+  quotaAlertsEnabled: true
+  globalSecurityAlertsEnabled: true
+```
+
+```bash
+a8s alert user-config set --file user-alerts.yaml
+a8s alert user-config set --quota-alerts --global-security-alerts
+```
+
+#### Configure Notification Preferences
+
+```yaml
+# notification-preferences.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: NotificationPreferences
+spec:
+  buildFailures: true
+  rolloutReady: true
+  vulnerabilityFindings: true
+  weeklyDigest: false
+```
+
+```bash
+a8s notification preferences set --file notification-preferences.yaml
+a8s notification preferences set --build-failures --rollout-ready --vulnerability-findings --weekly-digest=false
+```
+
 ## Administrative Mutations
 
 All commands in this section require backend admin authorization.
@@ -915,6 +1655,185 @@ request payload. They remain payload-free actions:
 ```bash
 a8s admin quota approve request-123
 a8s admin quota reject request-123
+```
+
+### Real Administrative Examples
+
+#### Create or Update Admin User
+
+```yaml
+# admin-user-create.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: AdminUserCreate
+spec:
+  username: dara
+  email: dara@example.com
+  firstName: Dara
+  lastName: Sok
+  passwordFrom:
+    env: A8S_INITIAL_PASSWORD
+```
+
+```bash
+a8s admin user create --file admin-user-create.yaml
+a8s admin user create --username dara --email dara@example.com --first-name Dara --last-name Sok --password-env A8S_INITIAL_PASSWORD
+```
+
+```yaml
+# admin-user-update.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: AdminUserUpdate
+spec:
+  username: dara
+  email: dara@example.com
+  firstName: Dara
+  lastName: Sok
+```
+
+```bash
+a8s admin user update user-123 --file admin-user-update.yaml
+a8s admin user update user-123 --username dara --email dara@example.com --first-name Dara --last-name Sok
+```
+
+#### Update Admin Project or Cluster
+
+```yaml
+# admin-project-update.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: AdminProjectUpdate
+spec:
+  name: shop-api
+  userId: 11111111-1111-1111-1111-111111111111
+  repoProvider: github
+  repoFullName: acme/shop-api
+  repoUrl: https://github.com/acme/shop-api.git
+  branch: main
+  framework: spring
+  appPort: 8080
+  status: ACTIVE
+  autoDeployEnabled: true
+```
+
+```bash
+a8s admin project update project-123 --file admin-project-update.yaml
+a8s admin project update project-123 --name shop-api --user-id 11111111-1111-1111-1111-111111111111 --repo-provider github --repo-full-name acme/shop-api --repo-url https://github.com/acme/shop-api.git --branch main --framework spring --app-port 8080 --status ACTIVE --auto-deploy
+```
+
+```yaml
+# admin-cluster-update.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: AdminClusterUpdate
+spec:
+  alias: primary
+  operatorNote: Production cluster
+  failureAlerts: true
+  maintenanceMode: false
+  protectFromDelete: true
+```
+
+```bash
+a8s admin cluster update cluster-123 --file admin-cluster-update.yaml
+a8s admin cluster update cluster-123 --alias primary --operator-note "Production cluster" --failure-alerts --maintenance-mode=false --protect-from-delete
+```
+
+#### Set Admin Cluster Quota
+
+```yaml
+# admin-cluster-quota.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: AdminClusterQuota
+spec:
+  cpuLimit: 8
+  memoryLimit: 17179869184
+  pvcLimit: 20
+```
+
+```bash
+a8s admin cluster quota set production-primary ns-team --file admin-cluster-quota.yaml
+a8s admin cluster quota set production-primary ns-team --cpu-limit 8 --memory-limit 17179869184 --pvc-limit 20
+```
+
+#### Create Admin GitOps or Registry Project
+
+```yaml
+# gitops-app.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: AdminGitOpsApplication
+spec:
+  name: shop-api
+  repoUrl: https://github.com/acme/shop-gitops.git
+  authType: token
+  tokenFrom:
+    env: GITOPS_TOKEN
+```
+
+```bash
+a8s admin gitops app create --file gitops-app.yaml
+a8s admin gitops app create --name shop-api --repo-url https://github.com/acme/shop-gitops.git --auth-type token --token-env GITOPS_TOKEN
+```
+
+```yaml
+# registry-project.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: AdminRegistryProject
+spec:
+  name: shop
+  publicProject: false
+```
+
+```bash
+a8s admin registry project create --file registry-project.yaml
+a8s admin registry project create --name shop --public=false
+```
+
+#### Create or Update SonarQube Project
+
+```yaml
+# sonarqube-project.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: AdminSonarQubeProject
+spec:
+  key: shop-api
+  name: Shop API
+  mainBranch: main
+  visibility: private
+```
+
+```bash
+a8s admin sonarqube server-project create --file sonarqube-project.yaml
+a8s admin sonarqube server-project create --key shop-api --name "Shop API" --main-branch main --visibility private
+```
+
+```yaml
+# sonarqube-project-patch.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: AdminSonarQubeProjectPatch
+spec:
+  key: shop-api-v2
+  visibility: private
+```
+
+```bash
+a8s admin sonarqube server-project update shop-api --file sonarqube-project-patch.yaml
+a8s admin sonarqube server-project update shop-api --key shop-api-v2 --visibility private
+```
+
+#### Update Admin Documentation
+
+```yaml
+# documentation-update.yaml
+apiVersion: cli.a8s.io/v1alpha1
+kind: AdminDocumentationUpdate
+spec:
+  path: guides/deploy.md
+  contentFile: deploy.md
+  sha: abc123
+  message: Update deploy guide
+```
+
+```bash
+a8s admin docs update --file documentation-update.yaml
+a8s admin docs update --path guides/deploy.md --content-file deploy.md --sha abc123 --message "Update deploy guide"
 ```
 
 ## Commands Without Operation Documents
