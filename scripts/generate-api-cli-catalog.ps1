@@ -63,7 +63,7 @@ function Get-SuggestedCommand([string]$Method, [string]$Path) {
         @{ Pattern = '^/api/v1/workspaces/entitlements$'; GET = 'a8s workspace entitlements' }
         @{ Pattern = '^/api/v1/workspaces/quota-pricing$'; GET = 'a8s workspace quota pricing' }
         @{ Pattern = '^/api/v1/workspaces/quota-requests$'; POST = 'a8s workspace quota request' }
-        @{ Pattern = '^/api/v1/workspaces/quota-requests/payment-status$'; GET = 'a8s workspace quota payment-status' }
+        @{ Pattern = '^/api/v1/workspaces/quota-requests/payment-status$'; GET = 'a8s workspace quota payment-status <md5>' }
         @{ Pattern = '^/api/v1/profile/me/avatar$'; GET = 'a8s profile avatar download'; POST = 'a8s profile avatar upload'; DELETE = 'a8s profile avatar delete' }
         @{ Pattern = '^/api/v1/profile/me/account-status$'; GET = 'a8s profile account status' }
         @{ Pattern = '^/api/v1/profile/me/deactivate$'; POST = 'a8s profile account deactivate' }
@@ -267,6 +267,12 @@ foreach ($file in $controllerFiles) {
 $rows = $rows | Sort-Object Feature, Controller, Path, Method
 $uniqueHandlers = ($rows | Group-Object Controller, Method, Path).Count
 $featureFolders = Get-ChildItem $controllerRoot -Directory | Sort-Object Name
+$excludedRows = @($rows | Where-Object Command -like "(*no user CLI command*)")
+$mappedRows = @($rows | Where-Object {
+    $_.Command -notlike "(*no user CLI command*)" -and
+    $_.Command -ne "(review command design)"
+})
+$unmappedRows = @($rows | Where-Object Command -eq "(review command design)")
 
 $lines = [System.Collections.Generic.List[string]]::new()
 $lines.Add("# A8S Backend API to CLI Catalog")
@@ -276,9 +282,71 @@ $lines.Add("")
 $lines.Add("- Feature folders: $($featureFolders.Count)")
 $lines.Add("- Controllers: $($controllerFiles.Count)")
 $lines.Add("- HTTP route patterns: $($rows.Count)")
+$lines.Add("- CLI-eligible route patterns mapped: $($mappedRows.Count)")
+$lines.Add("- Automation-only route patterns excluded: $($excludedRows.Count)")
+$lines.Add("- Unmapped CLI-eligible route patterns: $($unmappedRows.Count)")
 $lines.Add("- WebSocket routes: 4")
 $lines.Add("")
 $lines.Add("Global CLI flags should include ``--server``, ``--context``, ``--namespace``, ``--target-cluster``, ``--output``, ``--timeout``, and ``--verbose``.")
+$lines.Add("")
+$lines.Add("## Recommended CLI Command Tree")
+$lines.Add("")
+$lines.Add("Use resource-first Cobra command groups. Avoid generic top-level commands such as ``a8s create user`` or ``a8s list projects``.")
+$lines.Add("")
+$lines.Add('```text')
+$lines.Add("a8s")
+$lines.Add("|-- auth")
+$lines.Add("|-- context                 # CLI-local server, token, namespace, and cluster contexts")
+$lines.Add("|-- workspace")
+$lines.Add('|   `-- quota')
+$lines.Add("|-- profile")
+$lines.Add("|-- project")
+$lines.Add("|-- microservice")
+$lines.Add("|-- database")
+$lines.Add('|   `-- backup')
+$lines.Add("|-- cluster")
+$lines.Add("|   |-- backup")
+$lines.Add('|   `-- console')
+$lines.Add("|-- backup")
+$lines.Add("|-- kubernetes")
+$lines.Add("|-- logs")
+$lines.Add("|-- git")
+$lines.Add("|-- scan")
+$lines.Add("|-- monitoring")
+$lines.Add("|-- benchmark")
+$lines.Add("|-- sonarqube")
+$lines.Add("|-- defectdojo")
+$lines.Add("|-- alert")
+$lines.Add("|-- notification")
+$lines.Add('`-- admin')
+$lines.Add("    |-- user")
+$lines.Add("    |-- project")
+$lines.Add("    |-- cluster")
+$lines.Add("    |-- quota")
+$lines.Add("    |-- gitops")
+$lines.Add("    |-- registry")
+$lines.Add("    |-- sonarqube")
+$lines.Add("    |-- monitoring")
+$lines.Add("    |-- logs")
+$lines.Add("    |-- docs")
+$lines.Add('    `-- events')
+$lines.Add('```')
+$lines.Add("")
+$lines.Add("### Implementation order")
+$lines.Add("")
+$lines.Add("1. Foundation: ``auth``, ``context``, configuration, shared API client, output formats, confirmation prompts, and error handling.")
+$lines.Add("2. Core workflow: ``workspace``, ``profile``, ``project``, ``microservice``, ``database``, ``cluster``, and ``backup``.")
+$lines.Add("3. Operations: ``kubernetes``, ``logs``, ``git``, ``scan``, ``monitoring``, and ``notification``.")
+$lines.Add("4. Quality and security: ``benchmark``, ``sonarqube``, ``defectdojo``, and ``alert``.")
+$lines.Add("5. Administration: all commands under ``a8s admin`` with backend ``ROLE_ADMIN`` enforcement.")
+$lines.Add("")
+$lines.Add("### Command design rules")
+$lines.Add("")
+$lines.Add("- Use ``get``, ``list``, ``create``, ``update``, and ``delete`` consistently under each resource group.")
+$lines.Add("- Require ``--yes`` for destructive commands and support ``--dry-run`` where the API permits it.")
+$lines.Add("- Support ``--output table|json|yaml``, plus ``--file`` for complex request bodies.")
+$lines.Add("- Keep payment commands under ``a8s workspace quota`` because payment currently exists only for quota and plan purchases.")
+$lines.Add("- Never expose internal callbacks, provider webhook receivers, or Jenkins completion callbacks as ordinary CLI commands.")
 $lines.Add("")
 
 foreach ($folder in $featureFolders) {

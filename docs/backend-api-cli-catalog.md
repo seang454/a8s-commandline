@@ -5,9 +5,71 @@ Generated from controller annotations in `D:\CSTADPreUniversityTraining\ITP\fina
 - Feature folders: 21
 - Controllers: 38
 - HTTP route patterns: 248
+- CLI-eligible route patterns mapped: 238
+- Automation-only route patterns excluded: 10
+- Unmapped CLI-eligible route patterns: 0
 - WebSocket routes: 4
 
 Global CLI flags should include `--server`, `--context`, `--namespace`, `--target-cluster`, `--output`, `--timeout`, and `--verbose`.
+
+## Recommended CLI Command Tree
+
+Use resource-first Cobra command groups. Avoid generic top-level commands such as `a8s create user` or `a8s list projects`.
+
+```text
+a8s
+|-- auth
+|-- context                 # CLI-local server, token, namespace, and cluster contexts
+|-- workspace
+|   `-- quota
+|-- profile
+|-- project
+|-- microservice
+|-- database
+|   `-- backup
+|-- cluster
+|   |-- backup
+|   `-- console
+|-- backup
+|-- kubernetes
+|-- logs
+|-- git
+|-- scan
+|-- monitoring
+|-- benchmark
+|-- sonarqube
+|-- defectdojo
+|-- alert
+|-- notification
+`-- admin
+    |-- user
+    |-- project
+    |-- cluster
+    |-- quota
+    |-- gitops
+    |-- registry
+    |-- sonarqube
+    |-- monitoring
+    |-- logs
+    |-- docs
+    `-- events
+```
+
+### Implementation order
+
+1. Foundation: `auth`, `context`, configuration, shared API client, output formats, confirmation prompts, and error handling.
+2. Core workflow: `workspace`, `profile`, `project`, `microservice`, `database`, `cluster`, and `backup`.
+3. Operations: `kubernetes`, `logs`, `git`, `scan`, `monitoring`, and `notification`.
+4. Quality and security: `benchmark`, `sonarqube`, `defectdojo`, and `alert`.
+5. Administration: all commands under `a8s admin` with backend `ROLE_ADMIN` enforcement.
+
+### Command design rules
+
+- Use `get`, `list`, `create`, `update`, and `delete` consistently under each resource group.
+- Require `--yes` for destructive commands and support `--dry-run` where the API permits it.
+- Support `--output table|json|yaml`, plus `--file` for complex request bodies.
+- Keep payment commands under `a8s workspace quota` because payment currently exists only for quota and plan purchases.
+- Never expose internal callbacks, provider webhook receivers, or Jenkins completion callbacks as ordinary CLI commands.
 
 ## admin
 
@@ -380,7 +442,7 @@ When payment is confirmed, the backend approves the quota request, applies the w
 | `POST` | `/api/v1/workspaces/bootstrap` | `a8s workspace bootstrap` | `WorkspaceController` |
 | `GET` | `/api/v1/workspaces/quota-pricing` | `a8s workspace quota pricing` | `WorkspaceController` |
 | `POST` | `/api/v1/workspaces/quota-requests` | `a8s workspace quota request` | `WorkspaceController` |
-| `GET` | `/api/v1/workspaces/quota-requests/payment-status` | `a8s workspace quota payment-status` | `WorkspaceController` |
+| `GET` | `/api/v1/workspaces/quota-requests/payment-status` | `a8s workspace quota payment-status <md5>` | `WorkspaceController` |
 
 ## WebSockets
 
