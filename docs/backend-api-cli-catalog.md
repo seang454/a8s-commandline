@@ -370,6 +370,7 @@ No standalone controller. Console APIs are exposed through `singledb` and `dbclu
 | `DELETE` | `/api/v1/cluster/namespaces/{namespace}/clusters/{id}` | `a8s cluster delete <cluster-id>` | `ClusterController` |
 | `GET` | `/api/v1/cluster/namespaces/{namespace}/clusters/{id}` | `a8s cluster get <cluster-id>` | `ClusterController` |
 | `PATCH` | `/api/v1/cluster/namespaces/{namespace}/clusters/{id}` | `a8s cluster update <cluster-id>` | `ClusterController` |
+| `PATCH` | `/api/v1/cluster/namespaces/{namespace}/clusters/{id}` | `a8s cluster rotate-password <cluster-id>` | `ClusterController` workflow alias that updates the engine-specific `secrets` field. |
 | `PATCH` | `/api/v1/cluster/namespaces/{namespace}/clusters/{id}/backup` | `a8s cluster backup settings set <cluster-id>` | `ClusterController` |
 | `GET` | `/api/v1/cluster/namespaces/{namespace}/clusters/{id}/certificate` | `a8s cluster certificate <cluster-id>` | `ClusterController` |
 | `GET` | `/api/v1/cluster/namespaces/{namespace}/clusters/{id}/console/credentials` | `a8s cluster console credentials <cluster-id>` | `ClusterController` |
