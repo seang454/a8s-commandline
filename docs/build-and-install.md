@@ -90,14 +90,14 @@ Remove-Item Env:GOARCH
 
 ## Which Binary Should Users Download?
 
-| User machine | Binary |
-|---|---|
+| User machine             | Binary                  |
+| ------------------------ | ----------------------- |
 | Windows Intel/AMD 64-bit | `a8s-windows-amd64.exe` |
-| Windows ARM 64-bit | `a8s-windows-arm64.exe` |
-| Linux Intel/AMD 64-bit | `a8s-linux-amd64` |
-| Linux ARM 64-bit | `a8s-linux-arm64` |
-| macOS Intel | `a8s-darwin-amd64` |
-| macOS Apple Silicon | `a8s-darwin-arm64` |
+| Windows ARM 64-bit       | `a8s-windows-arm64.exe` |
+| Linux Intel/AMD 64-bit   | `a8s-linux-amd64`       |
+| Linux ARM 64-bit         | `a8s-linux-arm64`       |
+| macOS Intel              | `a8s-darwin-amd64`      |
+| macOS Apple Silicon      | `a8s-darwin-arm64`      |
 
 ## Install On Windows
 
@@ -248,6 +248,45 @@ contexts:
       credentialKey: context:production
 ```
 
+**Authentication requirements**
+
+A8S uses OpenID Connect (Keycloak) for interactive login. Before running `a8s auth login`, the active context must contain both `auth.issuer` and `auth.clientId`. If these are missing the CLI will refuse to start an interactive login with the error:
+
+    active context requires auth.issuer and auth.clientId
+
+Notes and quick fixes:
+
+- **CLI-created contexts:** When you create or update a context with `a8s context create|update`, the CLI will default `clientId` to `a8s-cli` if the flag is not provided. This default is not applied to hand-edited config files.
+- **Inspect the active config:** Use `a8s config path` to locate the active file, then `a8s context get <name>` to view the context contents.
+- **Use the repository example during development**:
+
+```powershell
+$env:A8S_CONFIG = 'D:\CSTADPreUniversityTraining\ITP\spring\a8s-commandline\.a8s.yaml'
+a8s auth login
+```
+
+- **Update a context from the CLI** (adds missing issuer/clientId safely):
+
+```powershell
+a8s context update development --issuer 'https://keycloak.autonomous-istad.com/realms/a8s' --client-id a8s-cli
+a8s auth login
+```
+
+- **One-off config file**:
+
+```powershell
+a8s --config 'D:\CSTADPreUniversityTraining\ITP\spring\a8s-commandline\.a8s.yaml' auth login
+```
+
+- **Non-interactive use:** Supply a bearer token instead of logging in:
+
+```powershell
+$env:A8S_TOKEN = '<your-bearer-token>'
+a8s project list
+```
+
+These additions clarify why `a8s auth login` can fail and provide safe, actionable fixes.
+
 ## First User Flow After Install
 
 After install and config:
@@ -278,4 +317,3 @@ rm -f "$HOME/.local/bin/a8s"
 
 Uninstalling the binary does not automatically remove user config or stored
 credentials.
-
