@@ -19,69 +19,197 @@ This document defines the production architecture for the Go/Cobra A8S CLI. The 
 ```text
 a8s-commandline/
 |-- cmd/
-|   |-- root.go
-|   |-- auth.go
-|   |-- context.go
-|   |-- workspace.go
-|   |-- project.go
-|   |-- microservice.go
-|   |-- database.go
-|   |-- cluster.go
-|   |-- backup.go
-|   |-- kubernetes.go
-|   |-- logs.go
-|   |-- git.go
-|   |-- scan.go
-|   |-- monitoring.go
-|   |-- benchmark.go
-|   |-- sonarqube.go
-|   |-- defectdojo.go
-|   |-- alert.go
-|   |-- notification.go
-|   |-- admin.go
-|   |-- doctor.go
-|   |-- completion.go
-|   `-- version.go
+|   `-- a8s/
+|       `-- main.go
 |-- internal/
+|   |-- cli/
+|   |   |-- root.go
+|   |   |-- runtime.go
+|   |   |-- global_flags.go
+|   |   `-- commands/
+|   |       |-- auth/
+|   |       |-- context/
+|   |       |-- workspace/
+|   |       |-- project/
+|   |       |-- microservice/
+|   |       |-- database/
+|   |       |-- cluster/
+|   |       |-- backup/
+|   |       |-- kubernetes/
+|   |       |-- git/
+|   |       |-- scan/
+|   |       |-- monitoring/
+|   |       |-- quality/
+|   |       `-- admin/
 |   |-- api/
 |   |   |-- client.go
-|   |   |-- request.go
-|   |   |-- response.go
-|   |   `-- services/
+|   |   |-- options.go
+|   |   |-- multipart.go
+|   |   |-- download.go
+|   |   |-- stream.go
+|   |   `-- resources/
+|   |       |-- projects/
+|   |       |-- microservices/
+|   |       |-- databases/
+|   |       |-- clusters/
+|   |       |-- backups/
+|   |       |-- workspaces/
+|   |       `-- admin/
+|   |-- operation/
+|   |   |-- envelope.go
+|   |   |-- loader.go
+|   |   |-- merge.go
+|   |   |-- validate.go
+|   |   |-- registry.go
+|   |   |-- secrets.go
+|   |   `-- kinds/
+|   |       |-- project/
+|   |       |-- microservice/
+|   |       |-- database/
+|   |       |-- cluster/
+|   |       |-- workspace/
+|   |       |-- quality/
+|   |       `-- admin/
+|   |-- workflow/
+|   |   |-- wait.go
+|   |   |-- poll.go
+|   |   |-- deployment/
+|   |   |-- backup/
+|   |   |-- payment/
+|   |   `-- scan/
 |   |-- auth/
 |   |-- config/
-|   |-- context/
+|   |-- contexts/
 |   |-- credentials/
-|   |-- errors/
+|   |-- clierrors/
 |   |-- output/
 |   |-- confirm/
-|   |-- workflow/
 |   |-- stream/
-|   |-- manifest/
+|   |-- files/
 |   `-- testutil/
-|-- pkg/version/
+|-- pkg/
+|   `-- version/
+|-- examples/
+|   |-- project/
+|   |-- microservice/
+|   |-- database/
+|   |-- cluster/
+|   |-- backup/
+|   |-- scan/
+|   `-- admin/
 |-- docs/
+|   `-- commands/              # Generated Cobra reference
 |-- scripts/
-`-- main.go
+|-- .github/workflows/
+|-- go.mod
+|-- go.sum
+|-- Makefile
+`-- README.md
+
+internal/cli/commands/database/deploy.go       Cobra arguments and flags
+internal/operation/kinds/database/deploy.go    YAML model, merge, validation
+internal/api/resources/databases/deploy.go     Backend request and response
+internal/workflow/deployment/database.go       Wait and polling behavior
+
 ```
+
+This structure is intentionally more modular than a flat `cmd/` directory.
+With hundreds of mapped routes, each command group needs its own package so
+command construction, flags, examples, and tests remain manageable.
+
+### Command Package Shape
+
+Each command group should follow a consistent structure:
+
+```text
+internal/cli/commands/database/
+|-- command.go                 # Creates `a8s database`
+|-- deploy.go                  # Cobra wiring for deploy
+|-- update.go
+|-- upgrade.go
+|-- backup.go
+|-- flags.go                   # Shared database flags
+|-- examples.go                # Cobra help examples
+`-- command_test.go
+```
+
+Cobra files only:
+
+- declare arguments and flags
+- load operation input
+- call a typed resource service or workflow
+- print the returned value
+
+They must not construct HTTP requests, implement polling loops, or contain
+backend-specific normalization logic.
+
+### API Resource Package Shape
+
+Each backend resource package owns its transport request and response models:
+
+```text
+internal/api/resources/databases/
+|-- client.go
+|-- models.go
+|-- deploy.go
+|-- backup.go
+|-- console.go
+`-- client_test.go
+```
+
+Resource clients know backend paths and DTOs, but do not know Cobra, terminal
+output, or operation-file envelopes.
+
+### Operation Kind Package Shape
+
+Each manifest domain owns user-facing operation kinds, defaults, validation,
+and mapping to backend DTOs:
+
+```text
+internal/operation/kinds/database/
+|-- deploy.go
+|-- update.go
+|-- upgrade.go
+|-- backup.go
+|-- defaults.go
+|-- validate.go
+|-- map_backend.go
+`-- operation_test.go
+```
+
+This is the core of the YAML-and-flags design:
+
+```text
+YAML or explicit flags
+-> operation kind
+-> defaults and validation
+-> backend request DTO
+-> API resource client
+```
+
+Operation kinds must not perform HTTP requests or print terminal output.
 
 ## Package Responsibilities
 
 | Package | Responsibility |
 |---|---|
-| `cmd` | Define Cobra commands, arguments, flags, help text, and dependency wiring. |
+| `cmd/a8s` | Minimal executable entry point that constructs and executes the root command. |
+| `internal/cli` | Construct the root command, runtime, global flags, and command groups. |
+| `internal/cli/commands/*` | Define Cobra commands, arguments, flags, help text, and dependency wiring by resource group. |
 | `internal/api` | Execute HTTP requests, attach authentication, decode responses, normalize errors, and apply safe retries. |
-| `internal/api/services` | Typed clients grouped by backend resource, such as projects, clusters, and admin users. |
+| `internal/api/resources/*` | Typed backend clients and transport DTOs grouped by backend resource. |
+| `internal/operation` | Load strict YAML/JSON, merge explicit flags, resolve secrets, validate operation kinds, and register schemas. |
+| `internal/operation/kinds/*` | User-facing operation models, defaults, validation, and mapping to backend request DTOs. |
 | `internal/auth` | Login, logout, token refresh, identity inspection, and role discovery. |
-| `internal/context` | Create, select, update, list, and delete named CLI contexts. |
+| `internal/contexts` | Create, select, update, list, and delete named CLI contexts. |
 | `internal/credentials` | Store tokens using the operating-system credential manager with a restricted-file fallback. |
 | `internal/config` | Load configuration and resolve precedence without storing secrets directly. |
-| `internal/errors` | Normalize API and local errors and map them to documented exit codes. |
+| `internal/clierrors` | Normalize API and local errors and map them to documented exit codes. |
 | `internal/output` | Render table, JSON, YAML, raw text, and downloaded files. |
 | `internal/confirm` | Confirm destructive operations and implement `--yes`. |
 | `internal/workflow` | Poll, wait, and coordinate multi-endpoint operations. |
 | `internal/stream` | Handle SSE, WebSocket, and log streams with cancellation and reconnect logic. |
-| `internal/manifest` | Read, strictly decode, merge, and validate YAML/JSON operation input and stdin for every payload-bearing mutation command. |
+| `internal/files` | Read domain-content files such as source archives, dotenv files, avatars, documentation, and query files. |
 | `internal/testutil` | Provide mock servers, fixtures, fake credentials, and output capture. |
 
 ## Dependency Direction
@@ -89,16 +217,21 @@ a8s-commandline/
 Dependencies should flow inward:
 
 ```text
-main -> cmd -> workflow/services -> api/auth/context/output/errors
+cmd/a8s -> cli/commands -> operation/workflow/api resources
+                          -> auth/contexts/output/clierrors
 ```
 
 Rules:
 
-- `cmd` may call services and workflows, but services must never import `cmd`.
-- API services return typed data and typed errors; they do not print.
+- CLI command packages may call operation kinds, resource clients, and
+  workflows, but those packages must never import CLI command packages.
+- API resource clients return typed data and typed errors; they do not print.
 - Output packages print data but do not call the API.
-- Workflows combine services, waiting, and streams but do not own global configuration.
+- Workflows combine resource clients, waiting, and streams but do not own global configuration.
 - Context and credential packages remain independent of Cobra.
+- Operation kinds may map to API resource DTOs but do not execute HTTP calls.
+- API resource packages must not apply user-facing defaults; defaults belong to
+  operation kinds.
 
 ## Root Runtime
 
@@ -115,6 +248,10 @@ type Runtime struct {
     Confirm     confirm.Prompter
 }
 ```
+
+Use plural or specific package names such as `contexts` and `clierrors` to
+avoid confusing them with Go's standard-library `context` and `errors`
+packages.
 
 Cobra commands should receive this runtime through constructors instead of reading global Viper variables directly. This makes commands deterministic and testable.
 
@@ -149,17 +286,21 @@ Do not retry unsafe create, deploy, payment, restore, or delete requests unless 
 
 Each resource group should have:
 
-1. A Cobra command constructor in `cmd`.
-2. A typed service interface under `internal/api/services`.
-3. Request and response models owned by the service package.
-4. Focused unit tests for arguments, flags, and service calls.
+1. Cobra command constructors under `internal/cli/commands/<resource>`.
+2. Typed backend clients under `internal/api/resources/<resource>`.
+3. User-facing YAML/flag kinds under `internal/operation/kinds/<resource>` for
+   configurable mutations.
+4. Workflows under `internal/workflow/<resource>` for asynchronous or
+   multi-endpoint operations.
+5. Focused unit tests for command wiring, operation mapping, and API calls.
 
 Example:
 
 ```text
-cmd/cluster.go
-internal/api/services/clusters.go
-internal/workflow/cluster_create.go
+internal/cli/commands/cluster/deploy.go
+internal/operation/kinds/cluster/deploy.go
+internal/api/resources/clusters/deploy.go
+internal/workflow/deployment/cluster.go
 ```
 
 `a8s cluster create --file cluster.yaml --wait` should call the cluster service, then delegate waiting or streaming to a workflow.
@@ -251,7 +392,7 @@ The current backend security configuration marks several powerful route groups a
 
 ### Phase 2: Core Commands
 
-- Implement workspace, profile, project, microservice, database, cluster, and backup services.
+- Implement workspace, profile, project, microservice, database, cluster, and backup resource clients and operation kinds.
 - Replace legacy action-first commands with resource-first commands.
 - Keep temporary aliases only if users already depend on them.
 
