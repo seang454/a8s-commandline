@@ -1,9 +1,12 @@
 package cli
 
 import (
+	"bufio"
 	"context"
+	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -121,6 +124,7 @@ func NewRootCommand(in io.Reader, out, errOut io.Writer) *cobra.Command {
 		},
 	})
 	features.RegisterAll(root, runtime)
+	root.AddCommand(newListCommand(root, runtime))
 	return root
 }
 
@@ -138,6 +142,7 @@ func isLocalCommand(cmd *cobra.Command) bool {
 		"a8s config",
 		"a8s context",
 		"a8s features",
+		"a8s list",
 		"a8s manifest",
 		"a8s version",
 	} {
@@ -146,6 +151,126 @@ func isLocalCommand(cmd *cobra.Command) bool {
 		}
 	}
 	return false
+}
+
+type commandInfo struct {
+	Command     string `json:"command" yaml:"command"`
+	Usage       string `json:"usage" yaml:"usage"`
+	Description string `json:"description" yaml:"description"`
+	Help        string `json:"help" yaml:"help"`
+}
+
+func newListCommand(root *cobra.Command, runtime *cliruntime.Runtime) *cobra.Command {
+	list := &cobra.Command{Use: "list", Short: "List CLI commands and local inventory"}
+	list.AddCommand(&cobra.Command{
+		Use:   "all",
+		Short: "List every available runnable command",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runtime.Printer.Print(runnableCommands(root))
+		},
+	})
+
+	// sections: group commands by their top-level section (e.g. 'cluster', 'project')
+	sectionsCmd := &cobra.Command{
+		Use:   "sections",
+		Short: "List commands grouped by top-level section",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			paginate, _ := cmd.Flags().GetBool("paginate")
+			pageSize, _ := cmd.Flags().GetInt("page-size")
+
+			// If output is json or yaml, print structured grouped output
+			if runtime.Printer.Format == "json" || runtime.Printer.Format == "yaml" {
+				grouped := map[string][]commandInfo{}
+				for _, c := range runnableCommands(root) {
+					parts := strings.Fields(c.Command)
+					section := "other"
+					if len(parts) >= 2 {
+						section = parts[1]
+					}
+					grouped[section] = append(grouped[section], c)
+				}
+				return runtime.Printer.Print(grouped)
+			}
+
+			// Human readable output with optional pagination
+			sections := map[string][]commandInfo{}
+			for _, c := range runnableCommands(root) {
+				parts := strings.Fields(c.Command)
+				section := "other"
+				if len(parts) >= 2 {
+					section = parts[1]
+				}
+				sections[section] = append(sections[section], c)
+			}
+			var names []string
+			for n := range sections {
+				names = append(names, n)
+			}
+			sort.Strings(names)
+
+			reader := bufio.NewReader(runtime.In)
+			for _, name := range names {
+				fmt.Fprintf(runtime.Out, "%s:\n", name)
+				cmds := sections[name]
+				for i, ci := range cmds {
+					fmt.Fprintf(runtime.Out, "  %s\n    %s\n", ci.Usage, ci.Description)
+					if paginate && (i+1)%pageSize == 0 {
+						fmt.Fprint(runtime.Out, "-- more -- press Enter to continue, 'q' to quit: ")
+						input, err := reader.ReadString('\n')
+						if err != nil {
+							return nil
+						}
+						if strings.TrimSpace(input) == "q" {
+							return nil
+						}
+					}
+				}
+				fmt.Fprintln(runtime.Out)
+				if paginate {
+					fmt.Fprint(runtime.Out, "-- press Enter to continue to next section, 'q' to quit: ")
+					input, err := reader.ReadString('\n')
+					if err != nil {
+						return nil
+					}
+					if strings.TrimSpace(input) == "q" {
+						return nil
+					}
+				}
+			}
+			return nil
+		},
+	}
+	sectionsCmd.Flags().BoolP("paginate", "p", false, "Paginate output interactively")
+	sectionsCmd.Flags().IntP("page-size", "n", 20, "Number of command lines per page when paginating")
+	list.AddCommand(sectionsCmd)
+	return list
+}
+
+func runnableCommands(root *cobra.Command) []commandInfo {
+	var result []commandInfo
+	var walk func(command *cobra.Command)
+	walk = func(command *cobra.Command) {
+		if command.Hidden {
+			return
+		}
+		if command.Run != nil || command.RunE != nil {
+			path := command.CommandPath()
+			result = append(result, commandInfo{
+				Command:     path,
+				Usage:       command.UseLine(),
+				Description: command.Short,
+				Help:        path + " --help",
+			})
+		}
+		for _, child := range command.Commands() {
+			walk(child)
+		}
+	}
+	walk(root)
+	sort.Slice(result, func(left, right int) bool {
+		return result[left].Command < result[right].Command
+	})
+	return result
 }
 
 func newConfigCommand(runtime *cliruntime.Runtime) *cobra.Command {
