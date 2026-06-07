@@ -131,6 +131,26 @@ Recommended context precedence: explicit command flags, active context, environm
 
 List commands should additionally support pagination, filtering, sorting, and `--all` where the backend supports those behaviors.
 
+### List commands (local helpers)
+
+The CLI includes local helper commands to inspect available commands and their usage.
+
+- `a8s list all` — Print every available runnable command. Use `-o json` to emit structured output suitable for scripting.
+- `a8s list sections` — Print commands grouped by top-level section (human-readable).
+  - `-p`, `--paginate` : Paginate output interactively (press Enter to continue, `q` to quit).
+  - `-n`, `--page-size <n>` : Page size for interactive pagination (default 20).
+  - `-o json` : Emit grouped JSON by section for machine consumption.
+
+Examples:
+
+```bash
+a8s list all
+a8s list sections
+a8s list sections -p
+a8s list sections -p -n 10
+a8s list sections -o json
+```
+
 ## Workflow Commands
 
 Workflow commands should combine multiple endpoints, polling, or WebSocket streams into one operator-friendly action.
