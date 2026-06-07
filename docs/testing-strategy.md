@@ -74,6 +74,15 @@ Maintain fixtures by backend feature.
 
 Run against an isolated backend, Keycloak realm, database, and Kubernetes test namespace.
 
+The repository includes a gated smoke-test scaffold:
+
+```bash
+A8S_RUN_INTEGRATION_TESTS=true \
+A8S_SERVER=https://api.example.com \
+A8S_TOKEN=<access-token> \
+go test ./internal/integration
+```
+
 Required workflows:
 
 - login, status, refresh, and logout
@@ -191,4 +200,3 @@ A command is complete when:
 - destructive behavior is confirmed where applicable
 - endpoint mapping and command reference are updated
 - an integration test exists for critical workflows
-

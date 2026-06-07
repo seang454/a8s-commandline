@@ -189,8 +189,8 @@ Machine-readable error output should include an error code, message, HTTP status
 | CLI endpoint command design | Complete | All CLI-eligible HTTP routes have suggested commands. |
 | Automation-only exclusions | Complete | Internal callbacks, provider webhooks, and Jenkins callbacks remain excluded. |
 | WebSocket command design | Complete | Four WebSocket routes have suggested watch commands. |
-| Go/Cobra implementation | In progress | The current Go project implements only a small legacy command subset. |
-| End-to-end command tests | Pending | Add authenticated integration tests per command group and workflow. |
+| Go/Cobra implementation | In progress | All 209 unique catalog command paths are registered through the shared endpoint executor, including JSON/YAML bodies, multipart uploads, downloads, SSE responses, and four WebSocket watch routes. Keycloak PKCE login, secure context credentials, pre-command token refresh, one-time backend-401 refresh/replay, invalid-refresh cleanup, auth status, and local logout are implemented. `a8s database deploy` is typed; scan start, cluster deploy, and quota purchase have typed convenience flags; selected async operations support `--wait`. |
+| End-to-end command tests | In progress | Catalog-to-Cobra coverage, shared executor tests, command wait tests, and gated backend smoke-test scaffolding are implemented. Authenticated backend integration tests remain required per command group and workflow. |
 
 ## Example Operator Workflows
 

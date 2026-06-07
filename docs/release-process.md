@@ -53,6 +53,23 @@ darwin/arm64
 - documentation generation is clean
 - backend security production gate is approved
 
+The repository includes GitHub Actions workflows for CI and tagged releases:
+
+- `.github/workflows/ci.yml`
+- `.github/workflows/release.yml`
+
+The release workflow builds all initial platform targets and writes `dist/checksums.txt`. Optional keyless signing is enabled when `COSIGN_EXPERIMENTAL=true`.
+
+Local installer scripts are available for smoke testing packaged binaries:
+
+```bash
+scripts/install.sh dist/a8s-linux-amd64 ~/.local/bin
+```
+
+```powershell
+.\scripts\install.ps1 -BinaryPath .\dist\a8s-windows-amd64.exe
+```
+
 ## Build Reproducibility
 
 Use a release tool such as GoReleaser. Builds should:
@@ -154,4 +171,3 @@ Before the first production release, verify:
 - WebSocket authentication is protected consistently
 - `/api/admin/documentation/**` requires admin authorization
 - error responses do not leak internal exceptions
-

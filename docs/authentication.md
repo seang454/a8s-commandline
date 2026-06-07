@@ -10,6 +10,7 @@ The backend is a stateless Spring Security OAuth2 resource server. It validates 
 
 ```bash
 a8s auth login
+a8s auth login --no-browser --login-timeout 10m
 a8s auth status
 a8s auth logout
 a8s auth verify-email status
@@ -88,7 +89,7 @@ Preferred storage:
 | macOS | Keychain |
 | Linux | Secret Service-compatible keyring |
 
-If no credential manager is available, allow a restricted file fallback only after warning the user. The fallback file must:
+If no credential manager is available, the current implementation warns the user and uses a restricted file fallback. The fallback file must:
 
 - be separate from normal configuration
 - use restrictive file permissions
@@ -121,6 +122,10 @@ Before an authenticated request:
 6. If refresh fails, clear unusable credentials and return authentication exit code `3`.
 
 Do not repeatedly retry `401` responses. One refresh-and-retry attempt is the maximum.
+
+Current implementation refreshes near-expiry credentials before command execution. After a backend `401`, it forces one refresh and replays the original HTTP request exactly once. JSON, generic reader, and multipart request bodies are captured before sending so the replay body is identical. Rotated refresh tokens are persisted, and an `invalid_grant` response clears only the affected context credential.
+
+Static tokens supplied through `--token`, `A8S_TOKEN`, or `A8S_API_TOKEN` are never refreshed from stored credentials.
 
 ## Request Authentication
 
@@ -187,6 +192,30 @@ Do not display tokens. With JSON or YAML output, use stable field names.
 
 Support `--all-contexts` only with confirmation.
 
+Current implementation deletes credentials for the active context locally. Remote Keycloak revocation/end-session, cached WebSocket cleanup, and `--all-contexts` are pending.
+
+## Current Implementation Status
+
+Implemented:
+
+- browser Authorization Code Flow with PKCE S256
+- state, nonce, issuer, audience, signature, and expiry validation
+- `--no-browser` and configurable `--login-timeout`
+- per-context credential records in the operating-system keyring
+- warned, restricted local credential-file fallback
+- static token precedence for flags and environment variables
+- pre-command access-token refresh and refresh-token rotation persistence
+- one forced refresh and exact request replay after a backend `401`
+- invalid refresh-grant detection and affected-context credential cleanup
+- rejection of absolute API request URLs and cross-origin HTTP redirects
+- token-safe authentication status and active-context local logout
+
+Pending before production:
+
+- remote Keycloak token revocation or end-session
+- device authorization flow
+- authenticated backend integration and broader token-leak security tests
+
 ## Static Token Compatibility
 
 For automation and CI, support an explicit environment variable or flag:
@@ -245,4 +274,3 @@ GitHub and GitLab integration endpoints have special backend behavior and may ac
 - Tokens never appear in stdout, stderr, or verbose logs.
 - Admin commands return exit code `4` for authenticated non-admin users.
 - Multiple contexts retain independent credentials.
-

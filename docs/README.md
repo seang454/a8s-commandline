@@ -29,10 +29,10 @@
 | Error contract | Complete |
 | Workflow contract | Complete |
 | Testing strategy | Complete |
-| Command-reference design | Complete |
+| Command reference | Generated from Cobra into `docs/command-reference.md` and `docs/commands/` |
 | OpenAPI compatibility design | Complete |
-| Release-process design | Complete |
-| Production Go/Cobra implementation | In progress |
+| Release-process design | Complete; CI/release workflows added |
+| Production Go/Cobra implementation | In progress: every unique catalog command path is registered; `database deploy` is typed; selected scan/cluster/payment typed flags and `--wait` polling are implemented; Keycloak PKCE login, secure context credentials, pre-command refresh, one-time backend-401 refresh/replay, auth status, and local logout are implemented |
 | Backend security hardening | Required before production |
 
 ## Production Gate

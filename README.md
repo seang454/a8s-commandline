@@ -2,7 +2,9 @@
 
 A Go + Cobra CLI for the A8S platform.
 
-The endpoint mapping and production design are complete. The current Go implementation is an early legacy subset and is being migrated to the resource-first architecture described in [docs/architecture.md](docs/architecture.md).
+The endpoint mapping and resource-first Cobra command tree are generated from
+the backend catalog. Specialized typed workflows are added on top of that
+shared endpoint executor.
 
 ## Documentation
 
@@ -21,9 +23,20 @@ The endpoint mapping and production design are complete. The current Go implemen
 ## Quick Start
 
 ### 1. Configure
-Copy `.a8s.yaml` to your home directory and set your API URL and token:
+
+Use `.a8s.yaml` as an example for context configuration. Authenticate through
+the configured Keycloak issuer, or supply a temporary token for automation.
+
 ```bash
-cp .a8s.yaml ~/.a8s.yaml
+export A8S_CONFIG="$PWD/.a8s.yaml"
+./a8s auth login
+./a8s auth status
+```
+
+For non-interactive automation:
+
+```bash
+export A8S_TOKEN="<temporary-access-token>"
 ```
 
 ### 2. Build
@@ -31,43 +44,112 @@ cp .a8s.yaml ~/.a8s.yaml
 make build
 ```
 
-### 3. Use the current legacy subset
-```bash
-# List users
-./a8s list users
-./a8s list users --all
-./a8s list users --output json
+### 3. Call a backend feature
 
-# List projects
-./a8s list projects
-
-# Create a user
-./a8s create user --name "John Doe" --email "john@example.com"
-./a8s create user --name "Admin User" --email "admin@example.com" --admin
-
-# Delete a user
-./a8s delete user --id "user-123"
-
-# Version
-./a8s version
-```
-
-The planned production syntax is resource-first:
+Every unique user-facing catalog command path is registered:
 
 ```bash
-a8s project list
-a8s cluster create --file cluster.yaml --wait
-a8s admin user create
-a8s workspace quota purchase --plan premium --wait
+./a8s project list
+./a8s cluster get <cluster-id>
+./a8s workspace quota pricing
+./a8s admin monitoring overview
 ```
 
-## Current Legacy Configuration Priority
-1. CLI flags (`--api-url`, `--token`)
-2. Environment variables (`A8S_API_URL`, `A8S_API_TOKEN`)
-3. Config file (`~/.a8s.yaml`)
-4. Defaults (`http://localhost:8080`)
+Inspect the backend-feature inventory or one feature's generated route file:
 
-The production configuration will use named contexts and secure credential storage. See [docs/configuration.md](docs/configuration.md).
+```bash
+./a8s features
+./a8s api catalog --search dbcluster
+```
+
+Feature-specific CLI ownership mirrors the Spring backend under
+`internal/cli/features/<backend-feature>/`.
+
+Mutation commands accept YAML/JSON request bodies and explicit field overrides:
+
+```bash
+./a8s project domain set <project-id> --set customDomain=api.example.com
+./a8s alert channel create --file alert-channel.yaml
+./a8s profile avatar upload --upload file=avatar.png
+```
+
+New backend routes can be reached before the catalog is regenerated:
+
+```bash
+./a8s api request GET /api/v1/new-resource
+```
+
+### 4. Deploy a database
+
+Using a YAML operation:
+
+```bash
+export A8S_DATABASE_PASSWORD="<database-password>"
+./a8s database deploy --file examples/database/deployment.yaml --wait
+```
+
+Using flags:
+
+```bash
+./a8s database deploy \
+  --project-name payments \
+  --engine postgresql \
+  --database-name payments \
+  --version 16 \
+  --password-env A8S_DATABASE_PASSWORD \
+  --wait
+```
+
+Preview the final backend request without sending it:
+
+```bash
+./a8s --output yaml database deploy \
+  --file examples/database/deployment.yaml \
+  --storage-size 50Gi \
+  --dry-run
+```
+
+## Current Implementation
+
+- production root runtime and global flags
+- versioned named-context configuration loading
+- normalized API errors and exit codes
+- shared JSON/YAML output
+- strict YAML operation loading with unknown-field rejection
+- explicit flag-over-manifest merging
+- secure secret input from environment variables or stdin
+- typed `database deploy` backend client
+- database deployment dry-run and wait workflow
+- generated registry for all unique user-facing catalog command paths
+- authenticated generic JSON/YAML mutation execution with `--file` and `--set`
+- multipart uploads with `--upload` and `--form`
+- raw downloads with `--output-file`
+- SSE/raw response streaming and four authenticated WebSocket watch routes
+- shared `--wait` polling for known async operations using status URLs, operation IDs, or built-in scan/cluster/payment poll paths
+- typed convenience flags for `scan start`, `cluster deploy`, and `workspace quota purchase`
+- local context create/list/get/use/update/delete commands
+- Keycloak browser login using Authorization Code Flow with PKCE
+- context-scoped OS keyring credentials with restricted-file fallback
+- automatic access-token refresh before command execution
+- one forced token refresh and exact HTTP request replay after backend `401`
+- unusable refresh-credential cleanup after Keycloak `invalid_grant`
+- cross-origin redirect and absolute API URL token-leak protection
+- authentication status and local logout commands
+- direct `api request` compatibility command
+- generated Cobra command reference under `docs/command-reference.md` and `docs/commands/`
+- gated authenticated backend smoke test scaffold
+- GitHub Actions CI/release workflows with cross-platform builds and checksums
+- local installer scripts for Windows and Unix-like systems
+- catalog-to-Cobra coverage test
+- focused unit and command tests
+
+The generated commands provide broad backend endpoint coverage. High-value
+operations still need deeper domain validation, more typed payload models,
+workflow-specific integration tests, and backend security hardening before the
+CLI should be called production-ready.
+
+Legacy commands remain in the repository during migration but are no longer
+registered by the production root command.
 
 ## Build for All Platforms
 ```bash

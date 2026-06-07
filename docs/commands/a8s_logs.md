@@ -1,0 +1,36 @@
+# a8s logs
+
+GET /api/kubernetes/namespaces/{namespace}/pods/{podName}/logs/stream
+
+## Usage
+
+```text
+a8s logs <pod-name> [flags]
+```
+
+## Flags
+
+- `--container` `string` - pod container name
+- `--follow` `bool` - keep reading the event stream
+- `--output-file` `string` - write the response body to a file
+- `--query` `stringArray` - add query parameter using key=value; repeatable (default `[]`)
+- `--tail` `int` - number of previous log lines (default `0`)
+
+## Inherited Flags
+
+- `--config` `string` - config file path
+- `--context` `string` - named context to use
+- `--namespace` `string` - workspace or Kubernetes namespace
+- `--request-timeout` `string` - single HTTP request timeout
+- `--server` `string` - backend server URL
+- `--target-cluster` `string` - managed Kubernetes cluster alias
+- `--timeout` `string` - complete command timeout
+- `--token` `string` - temporary bearer token; prefer A8S_TOKEN
+- `-o, --output` `string` - output format: table|json|yaml
+
+## Backend Endpoint
+
+- `method`: `GET`
+- `endpoint`: `/api/kubernetes/namespaces/{namespace}/pods/{podName}/logs/stream`
+- `controller`: `KubernetesController`
+

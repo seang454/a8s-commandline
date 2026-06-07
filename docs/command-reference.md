@@ -1,144 +1,325 @@
-# A8S CLI Command Reference Design
+# A8S CLI Command Reference
 
-## Purpose
+Generated from the Cobra command tree. Do not manually edit command behavior here; update the command implementation and regenerate this file.
 
-This file defines how the user-facing command reference should be generated and maintained. The complete endpoint-to-command inventory remains in `backend-api-cli-catalog.md`.
+Regenerate with:
+
+```bash
+make generate-docs
+```
+
+## Command Pages
+
+- [a8s](commands/a8s.md) - A8S platform command-line interface
+- [a8s admin](commands/a8s_admin.md) - Manage admin
+- [a8s admin cluster](commands/a8s_admin_cluster.md) - Manage cluster
+- [a8s admin cluster health](commands/a8s_admin_cluster_health.md) - GET /api/v1/admin/clusters/kubernetes/{alias}/health
+- [a8s admin cluster list](commands/a8s_admin_cluster_list.md) - GET /api/v1/admin/clusters
+- [a8s admin cluster nodes](commands/a8s_admin_cluster_nodes.md) - GET /api/v1/admin/clusters/kubernetes
+- [a8s admin cluster quota](commands/a8s_admin_cluster_quota.md) - Manage quota
+- [a8s admin cluster quota delete](commands/a8s_admin_cluster_quota_delete.md) - DELETE /api/v1/admin/clusters/kubernetes/{alias}/quotas/{namespace}
+- [a8s admin cluster quota list](commands/a8s_admin_cluster_quota_list.md) - GET /api/v1/admin/clusters/kubernetes/{alias}/quotas
+- [a8s admin cluster quota set](commands/a8s_admin_cluster_quota_set.md) - PUT /api/v1/admin/clusters/kubernetes/{alias}/quotas/{namespace}
+- [a8s admin cluster update](commands/a8s_admin_cluster_update.md) - PATCH /api/v1/admin/clusters/{clusterId}
+- [a8s admin docs](commands/a8s_admin_docs.md) - Manage docs
+- [a8s admin docs delete](commands/a8s_admin_docs_delete.md) - DELETE /api/admin/documentation/content
+- [a8s admin docs files](commands/a8s_admin_docs_files.md) - GET /api/admin/documentation/files
+- [a8s admin docs get](commands/a8s_admin_docs_get.md) - GET /api/admin/documentation/content
+- [a8s admin docs publish](commands/a8s_admin_docs_publish.md) - POST /api/admin/documentation/publish
+- [a8s admin docs publish-logs](commands/a8s_admin_docs_publish-logs.md) - GET /api/admin/documentation/publish/logs
+- [a8s admin docs update](commands/a8s_admin_docs_update.md) - PUT /api/admin/documentation/content
+- [a8s admin events](commands/a8s_admin_events.md) - Manage events
+- [a8s admin events watch](commands/a8s_admin_events_watch.md) - Watch administrative events
+- [a8s admin gitops](commands/a8s_admin_gitops.md) - Manage gitops
+- [a8s admin gitops app](commands/a8s_admin_gitops_app.md) - Manage app
+- [a8s admin gitops app abort](commands/a8s_admin_gitops_app_abort.md) - POST /api/v1/admin/gitops/apps/{appId}/abort
+- [a8s admin gitops app create](commands/a8s_admin_gitops_app_create.md) - POST /api/v1/admin/gitops/apps
+- [a8s admin gitops app retry](commands/a8s_admin_gitops_app_retry.md) - POST /api/v1/admin/gitops/apps/{appId}/retry
+- [a8s admin gitops app sync](commands/a8s_admin_gitops_app_sync.md) - POST /api/v1/admin/gitops/apps/{appId}/sync
+- [a8s admin gitops overview](commands/a8s_admin_gitops_overview.md) - GET /api/v1/admin/gitops/overview
+- [a8s admin logs](commands/a8s_admin_logs.md) - Manage logs
+- [a8s admin logs clusters](commands/a8s_admin_logs_clusters.md) - GET /api/v1/admin/logs/clusters
+- [a8s admin logs namespaces](commands/a8s_admin_logs_namespaces.md) - GET /api/v1/admin/logs/namespaces
+- [a8s admin logs pods](commands/a8s_admin_logs_pods.md) - GET /api/v1/admin/logs/pods
+- [a8s admin logs query](commands/a8s_admin_logs_query.md) - GET /api/v1/admin/logs/query
+- [a8s admin logs workloads](commands/a8s_admin_logs_workloads.md) - GET /api/v1/admin/logs/workloads
+- [a8s admin monitoring](commands/a8s_admin_monitoring.md) - Manage monitoring
+- [a8s admin monitoring overview](commands/a8s_admin_monitoring_overview.md) - GET /api/v1/admin/monitoring/overview
+- [a8s admin project](commands/a8s_admin_project.md) - Manage project
+- [a8s admin project deactivate](commands/a8s_admin_project_deactivate.md) - DELETE /api/v1/admin/projects/{projectId}
+- [a8s admin project list](commands/a8s_admin_project_list.md) - GET /api/v1/admin/projects
+- [a8s admin project restore](commands/a8s_admin_project_restore.md) - POST /api/v1/admin/projects/{projectId}/restore
+- [a8s admin project update](commands/a8s_admin_project_update.md) - PATCH /api/v1/admin/projects/{projectId}
+- [a8s admin quota](commands/a8s_admin_quota.md) - Manage quota
+- [a8s admin quota approve](commands/a8s_admin_quota_approve.md) - POST /api/v1/admin/quota-requests/{id}/approve
+- [a8s admin quota list](commands/a8s_admin_quota_list.md) - GET /api/v1/admin/quota-requests
+- [a8s admin quota reject](commands/a8s_admin_quota_reject.md) - POST /api/v1/admin/quota-requests/{id}/reject
+- [a8s admin registry](commands/a8s_admin_registry.md) - Manage registry
+- [a8s admin registry artifact](commands/a8s_admin_registry_artifact.md) - Manage artifact
+- [a8s admin registry artifact delete](commands/a8s_admin_registry_artifact_delete.md) - DELETE /api/v1/admin/registry/projects/{projectName}/artifacts
+- [a8s admin registry artifact list](commands/a8s_admin_registry_artifact_list.md) - GET /api/v1/admin/registry/projects/{projectName}/artifacts
+- [a8s admin registry health](commands/a8s_admin_registry_health.md) - GET /api/v1/admin/registry/health
+- [a8s admin registry project](commands/a8s_admin_registry_project.md) - Manage project
+- [a8s admin registry project create](commands/a8s_admin_registry_project_create.md) - POST /api/v1/admin/registry/projects
+- [a8s admin registry project list](commands/a8s_admin_registry_project_list.md) - GET /api/v1/admin/registry/projects
+- [a8s admin registry repository](commands/a8s_admin_registry_repository.md) - Manage repository
+- [a8s admin registry repository delete](commands/a8s_admin_registry_repository_delete.md) - DELETE /api/v1/admin/registry/projects/{projectName}/repositories
+- [a8s admin registry repository list](commands/a8s_admin_registry_repository_list.md) - GET /api/v1/admin/registry/projects/{projectName}/repositories
+- [a8s admin sonarqube](commands/a8s_admin_sonarqube.md) - Manage sonarqube
+- [a8s admin sonarqube project](commands/a8s_admin_sonarqube_project.md) - Manage project
+- [a8s admin sonarqube project get](commands/a8s_admin_sonarqube_project_get.md) - GET /api/v1/admin/sonarqube/projects/{projectId}
+- [a8s admin sonarqube project list](commands/a8s_admin_sonarqube_project_list.md) - GET /api/v1/admin/sonarqube/projects
+- [a8s admin sonarqube server-project](commands/a8s_admin_sonarqube_server-project.md) - Manage server project
+- [a8s admin sonarqube server-project create](commands/a8s_admin_sonarqube_server-project_create.md) - POST /api/v1/admin/sonarqube/server-projects
+- [a8s admin sonarqube server-project delete](commands/a8s_admin_sonarqube_server-project_delete.md) - DELETE /api/v1/admin/sonarqube/server-projects/{projectKey}
+- [a8s admin sonarqube server-project get](commands/a8s_admin_sonarqube_server-project_get.md) - GET /api/v1/admin/sonarqube/server-projects/{projectKey}
+- [a8s admin sonarqube server-project list](commands/a8s_admin_sonarqube_server-project_list.md) - GET /api/v1/admin/sonarqube/server-projects
+- [a8s admin sonarqube server-project update](commands/a8s_admin_sonarqube_server-project_update.md) - PATCH /api/v1/admin/sonarqube/server-projects/{projectKey}
+- [a8s admin user](commands/a8s_admin_user.md) - Manage user
+- [a8s admin user create](commands/a8s_admin_user_create.md) - POST /api/v1/admin/users
+- [a8s admin user deactivate](commands/a8s_admin_user_deactivate.md) - DELETE /api/v1/admin/users/{userId}
+- [a8s admin user list](commands/a8s_admin_user_list.md) - GET /api/v1/admin/users
+- [a8s admin user reactivate](commands/a8s_admin_user_reactivate.md) - POST /api/v1/admin/users/{userId}/reactivate
+- [a8s admin user update](commands/a8s_admin_user_update.md) - PATCH /api/v1/admin/users/{userId}
+- [a8s alert](commands/a8s_alert.md) - Manage alert
+- [a8s alert channel](commands/a8s_alert_channel.md) - Manage channel
+- [a8s alert channel create](commands/a8s_alert_channel_create.md) - POST /api/v1/alerts/channels
+- [a8s alert channel delete](commands/a8s_alert_channel_delete.md) - DELETE /api/v1/alerts/channels/{channelId}
+- [a8s alert channel list](commands/a8s_alert_channel_list.md) - GET /api/v1/alerts/channels
+- [a8s alert channel update](commands/a8s_alert_channel_update.md) - PUT /api/v1/alerts/channels/{channelId}
+- [a8s alert project-config](commands/a8s_alert_project-config.md) - Manage project config
+- [a8s alert project-config get](commands/a8s_alert_project-config_get.md) - GET /api/v1/alerts/projects/{projectId}/config
+- [a8s alert project-config list](commands/a8s_alert_project-config_list.md) - GET /api/v1/alerts/projects/configs
+- [a8s alert project-config set](commands/a8s_alert_project-config_set.md) - PUT /api/v1/alerts/projects/{projectId}/config
+- [a8s alert user-config](commands/a8s_alert_user-config.md) - Manage user config
+- [a8s alert user-config get](commands/a8s_alert_user-config_get.md) - GET /api/v1/alerts/user-config
+- [a8s alert user-config set](commands/a8s_alert_user-config_set.md) - PUT /api/v1/alerts/user-config
+- [a8s api](commands/a8s_api.md) - Access backend API routes directly
+- [a8s api catalog](commands/a8s_api_catalog.md) - List implemented backend route mappings
+- [a8s api request](commands/a8s_api_request.md) - Send an authenticated request to any backend route
+- [a8s auth](commands/a8s_auth.md) - Authenticate and manage the current session
+- [a8s auth login](commands/a8s_auth_login.md) - Authenticate through Keycloak using browser PKCE
+- [a8s auth logout](commands/a8s_auth_logout.md) - Clear stored credentials for the active context
+- [a8s auth onboarding](commands/a8s_auth_onboarding.md) - Manage onboarding
+- [a8s auth onboarding start](commands/a8s_auth_onboarding_start.md) - POST /api/v1/auth/session/onboarding
+- [a8s auth onboarding status](commands/a8s_auth_onboarding_status.md) - GET /api/v1/auth/session/onboarding
+- [a8s auth status](commands/a8s_auth_status.md) - Show authentication status without displaying tokens
+- [a8s auth verify-email](commands/a8s_auth_verify-email.md) - Manage verify email
+- [a8s auth verify-email start](commands/a8s_auth_verify-email_start.md) - POST /api/v1/auth/keycloak/users/{keycloakUserId}/verify-email
+- [a8s auth verify-email status](commands/a8s_auth_verify-email_status.md) - GET /api/v1/auth/keycloak/users/{keycloakUserId}/verify-email
+- [a8s backup](commands/a8s_backup.md) - Manage backup
+- [a8s backup delete](commands/a8s_backup_delete.md) - DELETE /api/backups/{targetType}/{id}/{runId}
+- [a8s backup download](commands/a8s_backup_download.md) - GET /api/backups/download/{targetType}/{id}/{runId}
+- [a8s backup restore](commands/a8s_backup_restore.md) - POST /api/backups/restore/{targetType}/{id}/{runId}
+- [a8s backup restore cancel](commands/a8s_backup_restore_cancel.md) - POST /api/backups/restore/{targetType}/{id}/{runId}/cancel
+- [a8s backup settings](commands/a8s_backup_settings.md) - Manage settings
+- [a8s backup settings get](commands/a8s_backup_settings_get.md) - GET /api/backups/settings/{targetType}/{id}
+- [a8s backup settings set](commands/a8s_backup_settings_set.md) - POST /api/backups/settings/{targetType}/{id}
+- [a8s backup trigger](commands/a8s_backup_trigger.md) - POST /api/backups/trigger/{targetType}/{id}
+- [a8s benchmark](commands/a8s_benchmark.md) - Manage benchmark
+- [a8s benchmark delete](commands/a8s_benchmark_delete.md) - DELETE /api/v1/projects/live/{projectId}/benchmark/runs/{runId}
+- [a8s benchmark get](commands/a8s_benchmark_get.md) - GET /api/v1/projects/live/{projectId}/benchmark/runs/{runId}
+- [a8s benchmark list](commands/a8s_benchmark_list.md) - GET /api/v1/projects/live/{projectId}/benchmark/runs
+- [a8s benchmark run](commands/a8s_benchmark_run.md) - POST /api/v1/projects/live/{projectId}/benchmark/run
+- [a8s cluster](commands/a8s_cluster.md) - Manage cluster
+- [a8s cluster backup](commands/a8s_cluster_backup.md) - Manage backup
+- [a8s cluster backup settings](commands/a8s_cluster_backup_settings.md) - Manage settings
+- [a8s cluster backup settings set](commands/a8s_cluster_backup_settings_set.md) - PATCH /api/namespaces/{namespace}/cluster-deployments/{releaseName}/backup
+- [a8s cluster certificate](commands/a8s_cluster_certificate.md) - GET /api/namespaces/{namespace}/clusters/{id}/certificate
+- [a8s cluster clone-from-backup](commands/a8s_cluster_clone-from-backup.md) - POST /api/namespaces/{namespace}/clusters/clone-from-backup
+- [a8s cluster console](commands/a8s_cluster_console.md) - Manage console
+- [a8s cluster console credentials](commands/a8s_cluster_console_credentials.md) - GET /api/namespaces/{namespace}/clusters/{id}/console/credentials
+- [a8s cluster console data](commands/a8s_cluster_console_data.md) - GET /api/namespaces/{namespace}/clusters/{id}/console/data
+- [a8s cluster console deployment](commands/a8s_cluster_console_deployment.md) - GET /api/namespaces/{namespace}/clusters/{id}/console/deployment
+- [a8s cluster console namespaces](commands/a8s_cluster_console_namespaces.md) - GET /api/namespaces/{namespace}/clusters/{id}/console/namespaces
+- [a8s cluster console objects](commands/a8s_cluster_console_objects.md) - GET /api/namespaces/{namespace}/clusters/{id}/console/objects
+- [a8s cluster console query](commands/a8s_cluster_console_query.md) - POST /api/namespaces/{namespace}/clusters/{id}/console/query
+- [a8s cluster console test](commands/a8s_cluster_console_test.md) - POST /api/namespaces/{namespace}/clusters/{id}/console/test
+- [a8s cluster delete](commands/a8s_cluster_delete.md) - DELETE /api/namespaces/{namespace}/clusters/{id}
+- [a8s cluster deploy](commands/a8s_cluster_deploy.md) - POST /api/namespaces/{namespace}/cluster-deployments
+- [a8s cluster deployment](commands/a8s_cluster_deployment.md) - Manage deployment
+- [a8s cluster deployment values](commands/a8s_cluster_deployment_values.md) - GET /api/namespaces/{namespace}/cluster-deployments/{releaseName}/values
+- [a8s cluster get](commands/a8s_cluster_get.md) - GET /api/namespaces/{namespace}/clusters/{id}
+- [a8s cluster history](commands/a8s_cluster_history.md) - GET /api/namespaces/{namespace}/clusters/{id}/deployments
+- [a8s cluster list](commands/a8s_cluster_list.md) - GET /api/namespaces/{namespace}/clusters
+- [a8s cluster metrics](commands/a8s_cluster_metrics.md) - GET /api/namespaces/{namespace}/clusters/{id}/metrics
+- [a8s cluster settings](commands/a8s_cluster_settings.md) - Manage settings
+- [a8s cluster settings update](commands/a8s_cluster_settings_update.md) - PATCH /api/namespaces/{namespace}/clusters/{id}/settings
+- [a8s cluster status](commands/a8s_cluster_status.md) - GET /api/namespaces/{namespace}/cluster-deployments/{releaseName}
+- [a8s cluster update](commands/a8s_cluster_update.md) - PATCH /api/namespaces/{namespace}/clusters/{id}
+- [a8s cluster upgrade](commands/a8s_cluster_upgrade.md) - POST /api/namespaces/{namespace}/clusters/{id}/upgrade-version
+- [a8s cluster values](commands/a8s_cluster_values.md) - GET /api/namespaces/{namespace}/clusters/{id}/values
+- [a8s cluster watch](commands/a8s_cluster_watch.md) - GET /api/kubernetes/namespaces/{namespace}/releases/{releaseName}/deployment-stream
+- [a8s config](commands/a8s_config.md) - Inspect CLI configuration
+- [a8s config path](commands/a8s_config_path.md) - Print the active configuration path
+- [a8s config view](commands/a8s_config_view.md) - Print resolved non-secret configuration
+- [a8s context](commands/a8s_context.md) - Manage named backend environments
+- [a8s context create](commands/a8s_context_create.md) - Create a named context
+- [a8s context delete](commands/a8s_context_delete.md) - Delete a named context
+- [a8s context get](commands/a8s_context_get.md) - Get a configured context
+- [a8s context list](commands/a8s_context_list.md) - List configured contexts
+- [a8s context update](commands/a8s_context_update.md) - Update a named context
+- [a8s context use](commands/a8s_context_use.md) - Set the default context
+- [a8s database](commands/a8s_database.md) - Manage single database deployments
+- [a8s database backup](commands/a8s_database_backup.md) - Manage backup
+- [a8s database backup delete](commands/a8s_database_backup_delete.md) - DELETE /api/v1/database-deployments/{deploymentId}/backup/runs/{runId}
+- [a8s database backup download](commands/a8s_database_backup_download.md) - GET /api/v1/database-deployments/{deploymentId}/backup/runs/{runId}/download
+- [a8s database backup restore](commands/a8s_database_backup_restore.md) - POST /api/v1/database-deployments/{deploymentId}/backup/runs/{runId}/restore
+- [a8s database backup restore cancel](commands/a8s_database_backup_restore_cancel.md) - POST /api/v1/database-deployments/{deploymentId}/backup/runs/{runId}/restore/cancel
+- [a8s database backup run](commands/a8s_database_backup_run.md) - POST /api/v1/database-deployments/{deploymentId}/backup/run
+- [a8s database backup settings](commands/a8s_database_backup_settings.md) - Manage settings
+- [a8s database backup settings get](commands/a8s_database_backup_settings_get.md) - GET /api/v1/database-deployments/{deploymentId}/backup
+- [a8s database backup settings set](commands/a8s_database_backup_settings_set.md) - PATCH /api/v1/database-deployments/{deploymentId}/backup
+- [a8s database clone-from-backup](commands/a8s_database_clone-from-backup.md) - POST /api/v1/database-deployments/clone-from-backup
+- [a8s database console](commands/a8s_database_console.md) - Manage console
+- [a8s database console data](commands/a8s_database_console_data.md) - GET /api/v1/database-deployments/{deploymentId}/console/data
+- [a8s database console namespaces](commands/a8s_database_console_namespaces.md) - GET /api/v1/database-deployments/{deploymentId}/console/namespaces
+- [a8s database console objects](commands/a8s_database_console_objects.md) - GET /api/v1/database-deployments/{deploymentId}/console/objects
+- [a8s database console query](commands/a8s_database_console_query.md) - POST /api/v1/database-deployments/{deploymentId}/console/query
+- [a8s database console test](commands/a8s_database_console_test.md) - POST /api/v1/database-deployments/{deploymentId}/console/test
+- [a8s database credentials](commands/a8s_database_credentials.md) - GET /api/v1/database-deployments/{deploymentId}/credentials
+- [a8s database delete](commands/a8s_database_delete.md) - DELETE /api/v1/database-deployments/{deploymentId}
+- [a8s database deploy](commands/a8s_database_deploy.md) - Deploy a single database using flags or an operation file
+- [a8s database get](commands/a8s_database_get.md) - GET /api/v1/database-deployments/{deploymentId}
+- [a8s database list](commands/a8s_database_list.md) - GET /api/v1/database-deployments
+- [a8s database metrics](commands/a8s_database_metrics.md) - GET /api/v1/database-deployments/{deploymentId}/metrics
+- [a8s database restart](commands/a8s_database_restart.md) - POST /api/v1/database-deployments/{deploymentId}/restart
+- [a8s database rotate-password](commands/a8s_database_rotate-password.md) - POST /api/v1/database-deployments/{deploymentId}/rotate-password
+- [a8s database settings](commands/a8s_database_settings.md) - Manage settings
+- [a8s database settings update](commands/a8s_database_settings_update.md) - PATCH /api/v1/database-deployments/{deploymentId}/settings
+- [a8s database update](commands/a8s_database_update.md) - PATCH /api/v1/database-deployments/{deploymentId}
+- [a8s database upgrade](commands/a8s_database_upgrade.md) - POST /api/v1/database-deployments/{deploymentId}/upgrade-version
+- [a8s database verify-password](commands/a8s_database_verify-password.md) - POST /api/v1/database-deployments/{deploymentId}/verify-password
+- [a8s defectdojo](commands/a8s_defectdojo.md) - Manage defectdojo
+- [a8s defectdojo access](commands/a8s_defectdojo_access.md) - GET /api/v1/projects/{projectId}/defectdojo
+- [a8s defectdojo token](commands/a8s_defectdojo_token.md) - Manage token
+- [a8s defectdojo token sync](commands/a8s_defectdojo_token_sync.md) - PUT /api/v1/projects/{projectId}/defectdojo/token
+- [a8s doctor](commands/a8s_doctor.md) - Check CLI configuration and backend connectivity
+- [a8s features](commands/a8s_features.md) - List backend features exposed by the CLI
+- [a8s git](commands/a8s_git.md) - Manage git
+- [a8s git account](commands/a8s_git_account.md) - GET /api/v1/git-integrations/{provider}/brokered-account
+- [a8s git connect](commands/a8s_git_connect.md) - POST /api/v1/git-integrations/{provider}/connect
+- [a8s git disconnect](commands/a8s_git_disconnect.md) - DELETE /api/v1/git-integrations/{provider}
+- [a8s git providers](commands/a8s_git_providers.md) - GET /api/v1/git-integrations/linked-providers
+- [a8s git repos](commands/a8s_git_repos.md) - GET /api/v1/git-integrations/{provider}/repos
+- [a8s git state](commands/a8s_git_state.md) - GET /api/v1/git-integrations/{provider}/state
+- [a8s git sync-token](commands/a8s_git_sync-token.md) - POST /api/v1/git-integrations/{provider}/sync-keycloak-token
+- [a8s kubernetes](commands/a8s_kubernetes.md) - Manage kubernetes
+- [a8s kubernetes database-resources](commands/a8s_kubernetes_database-resources.md) - GET /api/kubernetes/namespaces/{namespace}/database-resources
+- [a8s kubernetes events](commands/a8s_kubernetes_events.md) - GET /api/kubernetes/namespaces/{namespace}/events
+- [a8s kubernetes overview](commands/a8s_kubernetes_overview.md) - GET /api/kubernetes/namespaces/{namespace}/overview
+- [a8s kubernetes pods](commands/a8s_kubernetes_pods.md) - GET /api/kubernetes/namespaces/{namespace}/pods
+- [a8s kubernetes pvc](commands/a8s_kubernetes_pvc.md) - GET /api/kubernetes/namespaces/{namespace}/persistent-volume-claims
+- [a8s kubernetes services](commands/a8s_kubernetes_services.md) - GET /api/kubernetes/namespaces/{namespace}/services
+- [a8s kubernetes test](commands/a8s_kubernetes_test.md) - GET /api/kubernetes/test
+- [a8s logs](commands/a8s_logs.md) - GET /api/kubernetes/namespaces/{namespace}/pods/{podName}/logs/stream
+- [a8s manifest](commands/a8s_manifest.md) - Generate and validate operation manifests
+- [a8s manifest init](commands/a8s_manifest_init.md) - Generate a starter manifest for a kind
+- [a8s manifest kinds](commands/a8s_manifest_kinds.md) - List supported operation manifest kinds
+- [a8s manifest schema](commands/a8s_manifest_schema.md) - Show the manifest schema summary for a kind
+- [a8s manifest validate](commands/a8s_manifest_validate.md) - Validate an operation manifest without sending a backend request
+- [a8s microservice](commands/a8s_microservice.md) - Manage microservice
+- [a8s microservice apply](commands/a8s_microservice_apply.md) - PUT /api/v1/projects/microservices/{projectId}/canvas
+- [a8s microservice delete](commands/a8s_microservice_delete.md) - DELETE /api/v1/projects/microservices/{projectId}
+- [a8s microservice deploy](commands/a8s_microservice_deploy.md) - POST /api/v1/projects/microservices
+- [a8s microservice detect](commands/a8s_microservice_detect.md) - POST /api/v1/projects/microservices/detect
+- [a8s microservice domains](commands/a8s_microservice_domains.md) - Manage domains
+- [a8s microservice domains update](commands/a8s_microservice_domains_update.md) - PATCH /api/v1/projects/microservices/{projectId}/domains
+- [a8s microservice env](commands/a8s_microservice_env.md) - Manage env
+- [a8s microservice env clear](commands/a8s_microservice_env_clear.md) - DELETE /api/v1/projects/microservices/{projectId}/services/{serviceId}/environment
+- [a8s microservice env get](commands/a8s_microservice_env_get.md) - GET /api/v1/projects/microservices/{projectId}/services/{serviceId}/environment
+- [a8s microservice env import](commands/a8s_microservice_env_import.md) - POST /api/v1/projects/microservices/{projectId}/services/{serviceId}/environment/import
+- [a8s microservice env set](commands/a8s_microservice_env_set.md) - PUT /api/v1/projects/microservices/{projectId}/services/{serviceId}/environment
+- [a8s microservice get](commands/a8s_microservice_get.md) - GET /api/v1/projects/microservices/{projectId}
+- [a8s microservice history](commands/a8s_microservice_history.md) - Manage history
+- [a8s microservice history delete](commands/a8s_microservice_history_delete.md) - DELETE /api/v1/projects/microservices/{projectId}/history/{snapshotId}
+- [a8s microservice history list](commands/a8s_microservice_history_list.md) - GET /api/v1/projects/microservices/{projectId}/history
+- [a8s microservice pods](commands/a8s_microservice_pods.md) - GET /api/v1/projects/microservices/{projectId}/runtime-pods
+- [a8s microservice readiness](commands/a8s_microservice_readiness.md) - GET /api/v1/projects/microservices/{projectId}/readiness
+- [a8s microservice redeploy](commands/a8s_microservice_redeploy.md) - POST /api/v1/projects/microservices/{projectId}/redeploy
+- [a8s microservice rollback](commands/a8s_microservice_rollback.md) - POST /api/v1/projects/microservices/{projectId}/rollback
+- [a8s microservice webhook](commands/a8s_microservice_webhook.md) - Manage webhook
+- [a8s microservice webhook get](commands/a8s_microservice_webhook_get.md) - GET /api/v1/projects/microservices/{projectId}/webhook
+- [a8s microservice webhook update](commands/a8s_microservice_webhook_update.md) - POST /api/v1/projects/microservices/{projectId}/webhook
+- [a8s monitoring](commands/a8s_monitoring.md) - Manage monitoring
+- [a8s monitoring overview](commands/a8s_monitoring_overview.md) - GET /api/v1/monitoring/overview
+- [a8s monitoring watch](commands/a8s_monitoring_watch.md) - Watch monitoring updates
+- [a8s notification](commands/a8s_notification.md) - Manage notification
+- [a8s notification list](commands/a8s_notification_list.md) - GET /api/notifications/history/{userId}
+- [a8s notification preferences](commands/a8s_notification_preferences.md) - Manage preferences
+- [a8s notification preferences get](commands/a8s_notification_preferences_get.md) - GET /api/notifications/preferences/{userId}
+- [a8s notification preferences set](commands/a8s_notification_preferences_set.md) - POST /api/notifications/preferences/{userId}
+- [a8s notification read](commands/a8s_notification_read.md) - POST /api/notifications/{notificationId}/read
+- [a8s notification watch](commands/a8s_notification_watch.md) - Watch notifications
+- [a8s profile](commands/a8s_profile.md) - Manage profile
+- [a8s profile account](commands/a8s_profile_account.md) - Manage account
+- [a8s profile account deactivate](commands/a8s_profile_account_deactivate.md) - POST /api/v1/profile/me/deactivate
+- [a8s profile account delete](commands/a8s_profile_account_delete.md) - DELETE /api/v1/profile/me
+- [a8s profile account reactivate](commands/a8s_profile_account_reactivate.md) - POST /api/v1/profile/me/reactivate
+- [a8s profile account status](commands/a8s_profile_account_status.md) - GET /api/v1/profile/me/account-status
+- [a8s profile avatar](commands/a8s_profile_avatar.md) - Manage avatar
+- [a8s profile avatar delete](commands/a8s_profile_avatar_delete.md) - DELETE /api/v1/profile/me/avatar
+- [a8s profile avatar download](commands/a8s_profile_avatar_download.md) - GET /api/v1/profile/me/avatar
+- [a8s profile avatar upload](commands/a8s_profile_avatar_upload.md) - POST /api/v1/profile/me/avatar
+- [a8s profile get](commands/a8s_profile_get.md) - GET /api/v1/profile/me
+- [a8s profile update](commands/a8s_profile_update.md) - PATCH /api/v1/profile/me
+- [a8s project](commands/a8s_project.md) - Manage project
+- [a8s project auto-deploy](commands/a8s_project_auto-deploy.md) - Manage auto deploy
+- [a8s project auto-deploy set](commands/a8s_project_auto-deploy_set.md) - PATCH /api/v1/projects/{projectId}/auto-deploy
+- [a8s project branches](commands/a8s_project_branches.md) - GET /api/v1/projects/{projectId}/branches
+- [a8s project delete](commands/a8s_project_delete.md) - DELETE /api/v1/projects/{projectId}
+- [a8s project deploy](commands/a8s_project_deploy.md) - POST /api/v1/projects
+- [a8s project domain](commands/a8s_project_domain.md) - Manage domain
+- [a8s project domain set](commands/a8s_project_domain_set.md) - PATCH /api/v1/projects/{projectId}/domain
+- [a8s project domain sync](commands/a8s_project_domain_sync.md) - POST /api/v1/projects/{projectId}/domain/sync
+- [a8s project env](commands/a8s_project_env.md) - Manage env
+- [a8s project env get](commands/a8s_project_env_get.md) - GET /api/v1/projects/{projectId}/environment
+- [a8s project env import](commands/a8s_project_env_import.md) - POST /api/v1/projects/{projectId}/environment/import
+- [a8s project env set](commands/a8s_project_env_set.md) - PUT /api/v1/projects/{projectId}/environment
+- [a8s project get](commands/a8s_project_get.md) - GET /api/v1/projects/{projectId}
+- [a8s project list](commands/a8s_project_list.md) - GET /api/v1/projects
+- [a8s project live](commands/a8s_project_live.md) - Manage live
+- [a8s project live list](commands/a8s_project_live_list.md) - GET /api/v1/projects/live
+- [a8s project logs](commands/a8s_project_logs.md) - GET /api/v1/jenkins/logs/stream
+- [a8s project logs websocket](commands/a8s_project_logs_websocket.md) - Watch Jenkins logs over WebSocket
+- [a8s project redeploy](commands/a8s_project_redeploy.md) - POST /api/v1/projects/{projectId}/sync
+- [a8s project release](commands/a8s_project_release.md) - Manage release
+- [a8s project release delete](commands/a8s_project_release_delete.md) - DELETE /api/v1/projects/{projectId}/releases/{releaseId}
+- [a8s project release rollback](commands/a8s_project_release_rollback.md) - POST /api/v1/projects/{projectId}/releases/{releaseId}/rollback
+- [a8s project releases](commands/a8s_project_releases.md) - GET /api/v1/projects/{projectId}/releases
+- [a8s project repository](commands/a8s_project_repository.md) - Manage repository
+- [a8s project repository connect](commands/a8s_project_repository_connect.md) - POST /api/v1/projects/{projectId}/repository/connect
+- [a8s project rollback](commands/a8s_project_rollback.md) - POST /api/v1/projects/{projectId}/rollback
+- [a8s project settings](commands/a8s_project_settings.md) - Manage settings
+- [a8s project settings update](commands/a8s_project_settings_update.md) - PATCH /api/v1/projects/{projectId}/settings
+- [a8s project webhook](commands/a8s_project_webhook.md) - Manage webhook
+- [a8s project webhook create](commands/a8s_project_webhook_create.md) - POST /api/v1/projects/{projectId}/webhook
+- [a8s project webhook delete](commands/a8s_project_webhook_delete.md) - DELETE /api/v1/projects/{projectId}/webhook
+- [a8s project webhook get](commands/a8s_project_webhook_get.md) - GET /api/v1/projects/{projectId}/webhook
+- [a8s project webhook rotate](commands/a8s_project_webhook_rotate.md) - POST /api/v1/projects/{projectId}/webhook/rotate
+- [a8s scan](commands/a8s_scan.md) - Manage scan
+- [a8s scan get](commands/a8s_scan_get.md) - GET /api/v1/image-scanner/scans/{scanId}
+- [a8s scan images](commands/a8s_scan_images.md) - GET /api/v1/image-scanner/images
+- [a8s scan list](commands/a8s_scan_list.md) - GET /api/v1/image-scanner/scans
+- [a8s scan report](commands/a8s_scan_report.md) - GET /api/v1/image-scanner/scans/{scanId}/report
+- [a8s scan start](commands/a8s_scan_start.md) - POST /api/v1/image-scanner/scans
+- [a8s sonarqube](commands/a8s_sonarqube.md) - Manage sonarqube
+- [a8s sonarqube access](commands/a8s_sonarqube_access.md) - POST /api/v1/projects/{projectId}/sonarqube/access
+- [a8s sonarqube summary](commands/a8s_sonarqube_summary.md) - GET /api/v1/projects/{projectId}/sonarqube
+- [a8s version](commands/a8s_version.md) - Print the CLI version
+- [a8s workspace](commands/a8s_workspace.md) - Manage workspace
+- [a8s workspace bootstrap](commands/a8s_workspace_bootstrap.md) - POST /api/v1/workspaces/bootstrap
+- [a8s workspace entitlements](commands/a8s_workspace_entitlements.md) - GET /api/v1/workspaces/entitlements
+- [a8s workspace quota](commands/a8s_workspace_quota.md) - Manage quota
+- [a8s workspace quota payment-status](commands/a8s_workspace_quota_payment-status.md) - GET /api/v1/workspaces/quota-requests/payment-status
+- [a8s workspace quota pricing](commands/a8s_workspace_quota_pricing.md) - GET /api/v1/workspaces/quota-pricing
+- [a8s workspace quota purchase](commands/a8s_workspace_quota_purchase.md) - Purchase a workspace quota plan using Bakong KHQR
+- [a8s workspace quota request](commands/a8s_workspace_quota_request.md) - POST /api/v1/workspaces/quota-requests
+- [a8s workspace status](commands/a8s_workspace_status.md) - GET /api/v1/workspaces/bootstrap
 
 ## Generation Policy
 
-Generate the final command reference from the actual Cobra command tree so documentation cannot drift from implementation.
-
-Recommended generator command:
-
-```bash
-go run ./scripts/generate-command-docs
-```
-
-Generated documentation should be written under:
-
-```text
-docs/commands/
-|-- a8s.md
-|-- a8s_project.md
-|-- a8s_cluster.md
-`-- ...
-```
-
-Do not manually edit generated command pages.
-
-## Required Content Per Command
-
-- command path
-- short and long description
-- usage
-- positional arguments
-- inherited and local flags
-- examples
-- output behavior
-- destructive-operation warning
-- authentication/role requirements
-- related commands
-
-## Command Conventions
-
-```text
-a8s <resource> <verb>
-a8s admin <resource> <verb>
-```
-
-Preferred verbs:
-
-```text
-get, list, create, update, delete, status, watch, logs, apply, run,
-restore, rollback, approve, reject, connect, disconnect
-```
-
-Avoid action-first top-level commands such as `a8s create user`.
-
-## Mutation Input Policy
-
-Every command that sends a configurable request payload to the backend must
-support both:
-
-- individual command flags
-- a YAML or JSON operation document supplied with `--file <path>` or
-  `--file -`
-
-This rule applies even when the backend request contains only one configurable
-field. Users may choose the most convenient form:
-
-```bash
-a8s database upgrade <deployment-id> --version 17
-a8s database upgrade <deployment-id> --file upgrade.yaml
-
-a8s project domain set <project-id> --domain api.example.com
-a8s project domain set <project-id> --file domain.yaml
-
-a8s scan start --image nginx:1.27
-a8s scan start --file scan.yaml
-```
-
-Both input forms must resolve to the same typed internal request model and
-produce the same backend payload.
-
-Input precedence is:
-
-```text
-explicit flags > operation file > active-context defaults > backend defaults
-```
-
-Only flags explicitly supplied by the user override operation-file values.
-Cobra default values must not accidentally replace values loaded from a file.
-
-Commands without a configurable request payload do not accept operation
-documents. This includes ordinary `get`, `list`, `status`, `watch`, `logs`,
-`download`, and delete commands, plus payload-free actions such as restart or
-sync. Their positional identifiers, output controls, confirmation flags, and
-workflow controls remain normal arguments and flags.
-
-File-content commands such as environment import, avatar upload, SQL query
-files, and documentation upload use their domain file directly. That file is
-not an operation YAML/JSON document.
-
-## Required CLI-Only Commands
-
-```bash
-a8s auth login|status|logout
-a8s context create|list|get|use|update|rename|delete
-a8s config view|path|validate
-a8s doctor
-a8s completion bash|zsh|fish|powershell
-a8s version --client --server
-```
-
-## Command Quality Checklist
-
-- resource-first placement
-- clear singular/plural behavior
-- stable arguments
-- safe destructive confirmation
-- JSON/YAML output suitable for automation
-- no secret values in help examples
-- `--file` and equivalent flags for every configurable mutation payload,
-  including small payloads
-- `--file -` support for YAML/JSON operation input from stdin
-- identical validation and backend payloads for file and flag input
-- `--wait` and `--timeout` where asynchronous
-- role requirements documented for admin commands
-
-## Temporary Legacy Aliases
-
-Legacy commands currently include:
-
-```bash
-a8s create user
-a8s list users
-a8s list projects
-a8s delete user
-```
-
-If compatibility is needed, keep them as hidden or deprecated aliases that print migration guidance. Remove them in the next major CLI version.
-
-## Reference Validation
-
-CI should generate the Cobra reference and fail when committed generated files differ. It should also compare implemented command paths with `backend-api-cli-catalog.md`.
+- Command pages are generated under `docs/commands/`.
+- Endpoint coverage remains tracked in `backend-api-cli-catalog.md`.
+- Commands with configurable mutation payloads should support both `--file` and equivalent flags.
+- Asynchronous operations should expose `--wait` when the backend provides a status URL, operation ID, or known polling endpoint.

@@ -227,3 +227,20 @@ Resume:
 - payment retries never create duplicate purchases
 - workflow tests use deterministic fake clocks
 
+## Current Implementation Status
+
+Implemented:
+
+- typed `a8s database deploy --wait`
+- generic `--wait` on selected async generated commands
+- polling via relative `Location`, `statusPath`, `statusUrl`, `operationPath`, or `operationUrl`
+- built-in polling for image scan start, workspace quota payment status, cluster deployment status, and database backup restore fallback to deployment detail
+- terminal status normalization for common success and failure strings
+- command tests for scan, payment, and cluster wait behavior
+
+Still required:
+
+- workflow-specific typed clients for project, microservice, monolithic, database cluster, backup, restore, and admin approval workflows
+- streaming-first behavior with reconnect before polling fallback
+- richer resume output with operation IDs
+- authenticated integration tests against the real backend for each critical workflow

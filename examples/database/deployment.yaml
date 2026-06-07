@@ -1,0 +1,21 @@
+apiVersion: cli.a8s.io/v1alpha1
+kind: DatabaseDeployment
+
+metadata:
+  name: payments-db
+
+spec:
+  projectName: payments
+  engine: postgresql
+  deploymentMode: single
+  databaseName: payments
+  username: app
+  passwordFrom:
+    env: A8S_DATABASE_PASSWORD
+  version: "16"
+  sizeProfile: small
+  storageSize: 20Gi
+  networkPolicyEnabled: true
+  tls:
+    enabled: true
+    requireSsl: true

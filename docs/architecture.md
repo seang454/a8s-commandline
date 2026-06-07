@@ -26,21 +26,33 @@ a8s-commandline/
 |   |   |-- root.go
 |   |   |-- runtime.go
 |   |   |-- global_flags.go
-|   |   `-- commands/
-|   |       |-- auth/
-|   |       |-- context/
-|   |       |-- workspace/
-|   |       |-- project/
-|   |       |-- microservice/
-|   |       |-- database/
-|   |       |-- cluster/
-|   |       |-- backup/
-|   |       |-- kubernetes/
-|   |       |-- git/
-|   |       |-- scan/
-|   |       |-- monitoring/
-|   |       |-- quality/
-|   |       `-- admin/
+|   |   |-- features/             # Mirrors every Spring backend feature folder
+|   |   |   |-- admin/
+|   |   |   |-- alerts/
+|   |   |   |-- auth/
+|   |   |   |-- databasebackup/
+|   |   |   |-- databaseconsole/
+|   |   |   |-- dbcluster/
+|   |   |   |-- documentation/
+|   |   |   |-- entitlements/
+|   |   |   |-- gitintegration/
+|   |   |   |-- imagescanner/
+|   |   |   |-- microservice/
+|   |   |   |-- monitoring/
+|   |   |   |-- monolithic/
+|   |   |   |-- notifications/
+|   |   |   |-- payments/
+|   |   |   |-- profile/
+|   |   |   |-- projects/
+|   |   |   |-- singledb/
+|   |   |   |-- sonarqube/
+|   |   |   |-- testingkit/
+|   |   |   `-- workspaces/
+|   |   `-- commands/             # Shared cross-feature command machinery
+|   |       |-- catalogcmd/
+|   |       |-- contextcmd/
+|   |       |-- doctorcmd/
+|   |       `-- watchcmd/
 |   |-- api/
 |   |   |-- client.go
 |   |   |-- options.go
@@ -106,7 +118,7 @@ a8s-commandline/
 |-- Makefile
 `-- README.md
 
-internal/cli/commands/database/deploy.go       Cobra arguments and flags
+internal/cli/features/singledb/deploy.go       Cobra arguments and flags
 internal/operation/kinds/database/deploy.go    YAML model, merge, validation
 internal/api/resources/databases/deploy.go     Backend request and response
 internal/workflow/deployment/database.go       Wait and polling behavior
@@ -114,17 +126,19 @@ internal/workflow/deployment/database.go       Wait and polling behavior
 ```
 
 This structure is intentionally more modular than a flat `cmd/` directory.
-With hundreds of mapped routes, each command group needs its own package so
-command construction, flags, examples, and tests remain manageable.
+With hundreds of mapped routes, each backend feature has a matching package
+under `internal/cli/features`. Developers can locate a feature using the same
+name they see in the Spring Boot monolith.
 
 ### Command Package Shape
 
 Each command group should follow a consistent structure:
 
 ```text
-internal/cli/commands/database/
+internal/cli/features/singledb/
 |-- command.go                 # Creates `a8s database`
 |-- deploy.go                  # Cobra wiring for deploy
+|-- routes_gen.go              # Generated endpoints and CLI paths owned by singledb
 |-- update.go
 |-- upgrade.go
 |-- backup.go
@@ -195,7 +209,8 @@ Operation kinds must not perform HTTP requests or print terminal output.
 |---|---|
 | `cmd/a8s` | Minimal executable entry point that constructs and executes the root command. |
 | `internal/cli` | Construct the root command, runtime, global flags, and command groups. |
-| `internal/cli/commands/*` | Define Cobra commands, arguments, flags, help text, and dependency wiring by resource group. |
+| `internal/cli/features/*` | Mirror backend feature folders and own feature routes, Cobra commands, friendly flags, examples, and tests. |
+| `internal/cli/commands/*` | Provide shared cross-feature Cobra machinery such as generic endpoint execution, contexts, diagnostics, and watches. |
 | `internal/api` | Execute HTTP requests, attach authentication, decode responses, normalize errors, and apply safe retries. |
 | `internal/api/resources/*` | Typed backend clients and transport DTOs grouped by backend resource. |
 | `internal/operation` | Load strict YAML/JSON, merge explicit flags, resolve secrets, validate operation kinds, and register schemas. |

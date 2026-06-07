@@ -35,6 +35,32 @@ a8s database upgrade db-123 --file -
 
 All forms must produce the same typed internal request and backend API payload.
 
+## Current Implementation Status
+
+This document is the production input contract for the A8S CLI. The current
+implementation already supports the foundation:
+
+- generic backend mutation commands can send YAML or JSON with `--file`
+- generic backend mutation commands can use `--set key=value` overrides
+- `a8s database deploy` has a typed strict operation model and equivalent
+  deployment flags
+- `a8s context create` and `a8s context update` support `--file` plus explicit
+  flag overrides
+- selected high-value commands already have convenience flags and `--wait`
+  workflows, including database deploy, cluster deploy, scan start, and
+  workspace quota purchase
+- payload-free backend actions must not accept request-body input such as
+  `--file`, `--set`, `--form`, or `--upload`
+- `a8s manifest kinds`, `a8s manifest schema`, `a8s manifest init`, and
+  `a8s manifest validate` are available for operation-file discovery,
+  starter generation, and local validation
+
+The remaining production work is to replace the generic `--set` path with typed
+models, full equivalent flags, strict field validation, and tests for every
+operation kind listed below. Until a command has a typed Cobra implementation,
+its YAML and flag examples define the required behavior that still needs to be
+built.
+
 ## Input Resolution
 
 Use this precedence:
@@ -1991,6 +2017,11 @@ Arguments and operational controls such as resource IDs, `--yes`, `--wait`,
 `--timeout`, `--output`, and `--verbose` remain flags or positional arguments.
 They are not fields in an operation document.
 
+The implementation should also reject body-input flags on these commands. A
+hidden flag is not enough; commands such as `a8s admin quota approve` and
+`a8s project redeploy` should fail fast if the user supplies `--file`, `--set`,
+`--form`, or `--upload`.
+
 ## Domain File Inputs
 
 Some commands consume files that are not YAML/JSON operation documents:
@@ -2093,8 +2124,9 @@ identifier appears in both places, reject mismatches.
 
 ## Schema Discovery and Starter Files
 
-Users should not have to search source code to discover supported fields.
-Generate schemas from the CLI's typed operation-input models and provide:
+Users should not have to search source code to discover supported fields. For
+production, generate schemas from the CLI's typed operation-input models and
+provide:
 
 ```bash
 # List supported operation kinds
@@ -2114,6 +2146,12 @@ a8s manifest validate --file database.yaml
 mark required fields, identify secret-reference fields, and show allowed enum
 values. CI must detect drift between these schemas, the Go request models, and
 the backend OpenAPI contract.
+
+The current `a8s manifest` implementation provides schema summaries, starter
+files, and local validation for known operation kinds. Strict field validation
+is available for typed operation models such as `DatabaseDeployment`, `Context`,
+and `ContextPatch`; other known kinds receive envelope, kind, and required-field
+validation until their typed request models are implemented.
 
 ## Secrets
 
