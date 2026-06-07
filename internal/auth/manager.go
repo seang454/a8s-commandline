@@ -251,7 +251,8 @@ func (m *Manager) EndSession(ctx context.Context, resolved config.Resolved, opti
 		return LogoutResult{}, clierrors.Validation("callback port must be between 0 and 65535")
 	}
 	key := credentials.Key(resolved.ContextName, resolved.Auth.CredentialKey)
-	if _, err := m.Store.Get(key); err != nil {
+	record, err := m.Store.Get(key)
+	if err != nil {
 		if errors.Is(err, credentials.ErrNotFound) {
 			return LogoutResult{}, nil
 		}
@@ -279,6 +280,9 @@ func (m *Manager) EndSession(ctx context.Context, resolved config.Resolved, opti
 	values.Set("client_id", resolved.Auth.ClientID)
 	values.Set("post_logout_redirect_uri", redirectURL)
 	values.Set("state", state)
+	if record.IDToken != "" {
+		values.Set("id_token_hint", record.IDToken)
+	}
 	logoutURL := endpoint + "?" + values.Encode()
 
 	fmt.Fprintln(options.Out, "CLI logout callback redirect URI:")

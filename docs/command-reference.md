@@ -104,9 +104,9 @@ make generate-docs
 - [a8s auth onboarding start](commands/a8s_auth_onboarding_start.md) - POST /api/v1/auth/session/onboarding
 - [a8s auth onboarding status](commands/a8s_auth_onboarding_status.md) - GET /api/v1/auth/session/onboarding
 - [a8s auth status](commands/a8s_auth_status.md) - Show authentication status without displaying tokens
-- [a8s auth verify-email](commands/a8s_auth_verify-email.md) - Manage verify email
-- [a8s auth verify-email start](commands/a8s_auth_verify-email_start.md) - POST /api/v1/auth/keycloak/users/{keycloakUserId}/verify-email
-- [a8s auth verify-email status](commands/a8s_auth_verify-email_status.md) - GET /api/v1/auth/keycloak/users/{keycloakUserId}/verify-email
+- [a8s auth verify-email](commands/a8s_auth_verify-email.md) - Manage email verification for the authenticated user
+- [a8s auth verify-email start](commands/a8s_auth_verify-email_start.md) - Start email verification for the authenticated user
+- [a8s auth verify-email status](commands/a8s_auth_verify-email_status.md) - Show email verification status
 - [a8s backup](commands/a8s_backup.md) - Manage backup
 - [a8s backup delete](commands/a8s_backup_delete.md) - DELETE /api/backups/{targetType}/{id}/{runId}
 - [a8s backup download](commands/a8s_backup_download.md) - GET /api/backups/download/{targetType}/{id}/{runId}

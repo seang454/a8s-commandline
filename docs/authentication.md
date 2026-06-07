@@ -13,6 +13,8 @@ a8s auth login
 a8s auth login --no-browser --login-timeout 10m
 a8s auth status
 a8s auth logout
+a8s auth logout --keycloak
+a8s auth logout --callback-port 64239
 a8s auth verify-email status
 a8s auth verify-email start
 ```
@@ -230,7 +232,29 @@ Do not display tokens. With JSON or YAML output, use stable field names.
 
 Support `--all-contexts` only with confirmation.
 
-Current implementation deletes credentials for the active context locally. Remote Keycloak revocation/end-session, cached WebSocket cleanup, and `--all-contexts` are pending.
+Current implementation always deletes credentials for the active context
+locally. It can also start a browser-based Keycloak end-session flow:
+
+```bash
+a8s auth logout --keycloak
+a8s auth logout --callback-port 64239
+```
+
+`--callback-port` uses the same loopback callback shape as login:
+
+```text
+http://127.0.0.1:64239/callback
+```
+
+The Keycloak client must allow this value in **Valid post logout redirect
+URIs**, or allow a wildcard such as:
+
+```text
+http://127.0.0.1:*
+```
+
+Local credentials are deleted even if the remote browser logout fails. Token
+revocation, cached WebSocket cleanup, and `--all-contexts` are pending.
 
 ## Current Implementation Status
 
@@ -246,11 +270,13 @@ Implemented:
 - one forced refresh and exact request replay after a backend `401`
 - invalid refresh-grant detection and affected-context credential cleanup
 - rejection of absolute API request URLs and cross-origin HTTP redirects
-- token-safe authentication status and active-context local logout
+- token-safe authentication status
+- active-context local logout
+- optional browser Keycloak end-session logout with `--keycloak` or `--callback-port`
 
 Pending before production:
 
-- remote Keycloak token revocation or end-session
+- remote Keycloak token revocation
 - device authorization flow
 - authenticated backend integration and broader token-leak security tests
 

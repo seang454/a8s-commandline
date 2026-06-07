@@ -26,5 +26,5 @@ a8s auth
 - [a8s auth logout](a8s_auth_logout.md) - Clear stored credentials for the active context
 - [a8s auth onboarding](a8s_auth_onboarding.md) - Manage onboarding
 - [a8s auth status](a8s_auth_status.md) - Show authentication status without displaying tokens
-- [a8s auth verify-email](a8s_auth_verify-email.md) - Manage verify email
+- [a8s auth verify-email](a8s_auth_verify-email.md) - Manage email verification for the authenticated user
 

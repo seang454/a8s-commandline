@@ -3,18 +3,20 @@ package auth
 import (
 	"context"
 	"errors"
+	"net/http"
 	"time"
 
 	"github.com/spf13/cobra"
 
 	internalauth "github.com/yourname/a8s/internal/auth"
+	"github.com/yourname/a8s/internal/cli/commands/catalogcmd"
 	cliruntime "github.com/yourname/a8s/internal/cli/runtime"
 	"github.com/yourname/a8s/internal/clierrors"
 	"github.com/yourname/a8s/internal/credentials"
 )
 
 func addSessionCommands(group *cobra.Command, runtime *cliruntime.Runtime) {
-	group.AddCommand(newLoginCommand(runtime), newStatusCommand(runtime), newLogoutCommand(runtime))
+	group.AddCommand(newLoginCommand(runtime), newStatusCommand(runtime), newLogoutCommand(runtime), newVerifyEmailCommand(runtime))
 }
 
 func newLoginCommand(runtime *cliruntime.Runtime) *cobra.Command {
@@ -116,4 +118,60 @@ func statusOutput(runtime *cliruntime.Runtime, record credentials.Record) map[st
 		"issuer": record.Issuer, "subject": record.Subject, "username": record.Username,
 		"email": record.Email, "roles": record.Roles, "accessTokenExpiry": record.AccessTokenExpiry,
 	}
+}
+
+func newVerifyEmailCommand(runtime *cliruntime.Runtime) *cobra.Command {
+	command := &cobra.Command{Use: "verify-email", Short: "Manage email verification for the authenticated user"}
+	command.AddCommand(newVerifyEmailStatusCommand(runtime), newVerifyEmailStartCommand(runtime))
+	return command
+}
+
+func newVerifyEmailStatusCommand(runtime *cliruntime.Runtime) *cobra.Command {
+	return &cobra.Command{
+		Use:   "status [keycloak-user-id]",
+		Short: "Show email verification status",
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			userID, err := keycloakUserID(runtime, args)
+			if err != nil {
+				return err
+			}
+			return catalogcmd.ExecuteRoute(cmd.Context(), runtime, http.MethodGet, "/api/v1/auth/keycloak/users/{keycloakUserId}/verify-email", []string{"keycloak-user-id"}, []string{userID})
+		},
+	}
+}
+
+func newVerifyEmailStartCommand(runtime *cliruntime.Runtime) *cobra.Command {
+	return &cobra.Command{
+		Use:   "start [keycloak-user-id]",
+		Short: "Start email verification for the authenticated user",
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			userID, err := keycloakUserID(runtime, args)
+			if err != nil {
+				return err
+			}
+			return catalogcmd.ExecuteRoute(cmd.Context(), runtime, http.MethodPost, "/api/v1/auth/keycloak/users/{keycloakUserId}/verify-email", []string{"keycloak-user-id"}, []string{userID})
+		},
+	}
+}
+
+func keycloakUserID(runtime *cliruntime.Runtime, args []string) (string, error) {
+	if len(args) > 0 {
+		return args[0], nil
+	}
+	if runtime.Auth == nil {
+		return "", clierrors.New("authentication_required", "credential storage is unavailable; pass keycloak-user-id explicitly", 3)
+	}
+	record, err := runtime.Auth.Status(runtime.Config)
+	if errors.Is(err, credentials.ErrNotFound) {
+		return "", clierrors.New("authentication_required", "stored credentials not found; run a8s auth login", 3)
+	}
+	if err != nil {
+		return "", err
+	}
+	if record.Subject == "" {
+		return "", clierrors.Validation("stored credentials do not contain a Keycloak subject; pass keycloak-user-id explicitly")
+	}
+	return record.Subject, nil
 }

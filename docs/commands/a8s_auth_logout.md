@@ -5,8 +5,15 @@ Clear stored credentials for the active context
 ## Usage
 
 ```text
-a8s auth logout
+a8s auth logout [flags]
 ```
+
+## Flags
+
+- `--callback-port` `int` - fixed local logout callback port; Keycloak post logout redirect URI must allow http://127.0.0.1:<port>/callback (default `0`)
+- `--keycloak` `bool` - also end the Keycloak browser session
+- `--logout-timeout` `duration` - maximum time to complete browser logout (default `2m0s`)
+- `--no-browser` `bool` - print the Keycloak logout URL without opening a browser; implies --keycloak
 
 ## Inherited Flags
 

@@ -1,18 +1,12 @@
 # a8s auth verify-email start
 
-POST /api/v1/auth/keycloak/users/{keycloakUserId}/verify-email
+Start email verification for the authenticated user
 
 ## Usage
 
 ```text
-a8s auth verify-email start <keycloak-user-id> [flags]
+a8s auth verify-email start [keycloak-user-id]
 ```
-
-## Flags
-
-- `--dry-run` `bool` - print the resolved request without sending it
-- `--output-file` `string` - write the response body to a file
-- `--query` `stringArray` - add query parameter using key=value; repeatable (default `[]`)
 
 ## Inherited Flags
 
@@ -25,10 +19,4 @@ a8s auth verify-email start <keycloak-user-id> [flags]
 - `--timeout` `string` - complete command timeout
 - `--token` `string` - temporary bearer token; prefer A8S_TOKEN
 - `-o, --output` `string` - output format: table|json|yaml
-
-## Backend Endpoint
-
-- `method`: `POST`
-- `endpoint`: `/api/v1/auth/keycloak/users/{keycloakUserId}/verify-email`
-- `controller`: `AuthController`
 

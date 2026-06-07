@@ -1,6 +1,6 @@
 # a8s auth verify-email
 
-Manage verify email
+Manage email verification for the authenticated user
 
 ## Usage
 
@@ -22,6 +22,6 @@ a8s auth verify-email
 
 ## Child Commands
 
-- [a8s auth verify-email start](a8s_auth_verify-email_start.md) - POST /api/v1/auth/keycloak/users/{keycloakUserId}/verify-email
-- [a8s auth verify-email status](a8s_auth_verify-email_status.md) - GET /api/v1/auth/keycloak/users/{keycloakUserId}/verify-email
+- [a8s auth verify-email start](a8s_auth_verify-email_start.md) - Start email verification for the authenticated user
+- [a8s auth verify-email status](a8s_auth_verify-email_status.md) - Show email verification status
 

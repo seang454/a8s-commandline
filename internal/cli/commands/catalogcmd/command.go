@@ -63,6 +63,10 @@ func RegisterUtilities(root *cobra.Command, runtime *cliruntime.Runtime) {
 	root.AddCommand(newAPICommand(runtime))
 }
 
+func ExecuteRoute(ctx context.Context, runtime *cliruntime.Runtime, method, endpoint string, argNames, args []string) error {
+	return execute(ctx, runtime, method, endpoint, argNames, args, requestFlags{})
+}
+
 func registerQuotaPurchase(root *cobra.Command, runtime *cliruntime.Runtime) {
 	workspace := child(root, "workspace")
 	if workspace == nil {
