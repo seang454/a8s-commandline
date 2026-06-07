@@ -13,6 +13,7 @@
 | [workflows.md](workflows.md) | Waiting, polling, streaming, and terminal-state behavior. |
 | [testing-strategy.md](testing-strategy.md) | Unit, contract, integration, security, and release testing. |
 | [command-reference.md](command-reference.md) | Command conventions and generated reference requirements. |
+| [build-and-install.md](build-and-install.md) | Build outputs, per-OS installation, PATH setup, and first-run flow. |
 | [openapi-compatibility.md](openapi-compatibility.md) | OpenAPI generation, API compatibility, and drift detection. |
 | [release-process.md](release-process.md) | Versioning, CI gates, signing, packaging, and release procedure. |
 

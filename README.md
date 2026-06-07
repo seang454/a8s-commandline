@@ -17,6 +17,7 @@ shared endpoint executor.
 - [Workflow contracts](docs/workflows.md)
 - [Testing strategy](docs/testing-strategy.md)
 - [Command-reference design](docs/command-reference.md)
+- [Build and install](docs/build-and-install.md)
 - [OpenAPI compatibility](docs/openapi-compatibility.md)
 - [Release process](docs/release-process.md)
 
