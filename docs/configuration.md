@@ -208,6 +208,23 @@ a8s auth login
 
 After login, the CLI should fill user-specific values such as `namespace` and `credentialKey`.
 
+If Keycloak shows `Invalid parameter: redirect_uri`, the configured
+`auth.clientId` does not allow the CLI callback URL. The frontend client uses a
+web callback such as `https://autonomous-istad.com/api/auth/callback/keycloak`,
+but the CLI uses a loopback callback such as
+`http://127.0.0.1:<port>/callback`. Use a dedicated public `a8s-cli` client with
+`http://127.0.0.1:*` as an allowed redirect URI, or run:
+
+```bash
+a8s auth login --callback-port 64239
+```
+
+and allow exactly:
+
+```text
+http://127.0.0.1:64239/callback
+```
+
 ## Context Commands
 
 ```bash

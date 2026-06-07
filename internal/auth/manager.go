@@ -11,6 +11,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -32,8 +33,19 @@ type Manager struct {
 }
 
 type LoginOptions struct {
-	NoBrowser bool
-	Out       io.Writer
+	NoBrowser    bool
+	CallbackPort int
+	Out          io.Writer
+}
+
+type LogoutOptions struct {
+	NoBrowser    bool
+	CallbackPort int
+	Out          io.Writer
+}
+
+type LogoutResult struct {
+	RemoteAttempted bool
 }
 
 func NewManager(store credentials.Store) *Manager {
@@ -101,11 +113,18 @@ func (m *Manager) Login(ctx context.Context, resolved config.Resolved, options L
 	if resolved.Auth.Issuer == "" || resolved.Auth.ClientID == "" {
 		return credentials.Record{}, clierrors.Validation("active context requires auth.issuer and auth.clientId")
 	}
+	if options.CallbackPort < 0 || options.CallbackPort > 65535 {
+		return credentials.Record{}, clierrors.Validation("callback port must be between 0 and 65535")
+	}
 	provider, err := oidc.NewProvider(ctx, resolved.Auth.Issuer)
 	if err != nil {
 		return credentials.Record{}, fmt.Errorf("discover OIDC provider: %w", err)
 	}
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	listenAddress := "127.0.0.1:0"
+	if options.CallbackPort > 0 {
+		listenAddress = fmt.Sprintf("127.0.0.1:%d", options.CallbackPort)
+	}
+	listener, err := net.Listen("tcp", listenAddress)
 	if err != nil {
 		return credentials.Record{}, fmt.Errorf("start login callback: %w", err)
 	}
@@ -137,6 +156,9 @@ func (m *Manager) Login(ctx context.Context, resolved config.Resolved, options L
 		oauth2.SetAuthURLParam("code_challenge", challenge),
 		oauth2.SetAuthURLParam("code_challenge_method", "S256"),
 	)
+	fmt.Fprintln(options.Out, "CLI callback redirect URI:")
+	fmt.Fprintln(options.Out, redirectURL)
+	fmt.Fprintln(options.Out, "Keycloak must allow this redirect URI, or a wildcard such as http://127.0.0.1:*")
 	fmt.Fprintln(options.Out, "Open this URL to authenticate:")
 	fmt.Fprintln(options.Out, authURL)
 	if !options.NoBrowser {
@@ -221,6 +243,92 @@ func (m *Manager) Logout(resolved config.Resolved) error {
 	return m.Store.Delete(credentials.Key(resolved.ContextName, resolved.Auth.CredentialKey))
 }
 
+func (m *Manager) EndSession(ctx context.Context, resolved config.Resolved, options LogoutOptions) (LogoutResult, error) {
+	if resolved.Auth.Issuer == "" || resolved.Auth.ClientID == "" {
+		return LogoutResult{}, clierrors.Validation("active context requires auth.issuer and auth.clientId")
+	}
+	if options.CallbackPort < 0 || options.CallbackPort > 65535 {
+		return LogoutResult{}, clierrors.Validation("callback port must be between 0 and 65535")
+	}
+	key := credentials.Key(resolved.ContextName, resolved.Auth.CredentialKey)
+	if _, err := m.Store.Get(key); err != nil {
+		if errors.Is(err, credentials.ErrNotFound) {
+			return LogoutResult{}, nil
+		}
+		return LogoutResult{}, err
+	}
+	endpoint, err := discoverEndSessionEndpoint(ctx, resolved.Auth.Issuer)
+	if err != nil {
+		return LogoutResult{RemoteAttempted: true}, err
+	}
+	listenAddress := "127.0.0.1:0"
+	if options.CallbackPort > 0 {
+		listenAddress = fmt.Sprintf("127.0.0.1:%d", options.CallbackPort)
+	}
+	listener, err := net.Listen("tcp", listenAddress)
+	if err != nil {
+		return LogoutResult{RemoteAttempted: true}, fmt.Errorf("start logout callback: %w", err)
+	}
+	defer listener.Close()
+	redirectURL := "http://" + listener.Addr().String() + "/callback"
+	state, err := randomValue(32)
+	if err != nil {
+		return LogoutResult{RemoteAttempted: true}, err
+	}
+	values := url.Values{}
+	values.Set("client_id", resolved.Auth.ClientID)
+	values.Set("post_logout_redirect_uri", redirectURL)
+	values.Set("state", state)
+	logoutURL := endpoint + "?" + values.Encode()
+
+	fmt.Fprintln(options.Out, "CLI logout callback redirect URI:")
+	fmt.Fprintln(options.Out, redirectURL)
+	fmt.Fprintln(options.Out, "Keycloak must allow this post logout redirect URI, or a wildcard such as http://127.0.0.1:*")
+	fmt.Fprintln(options.Out, "Open this URL to sign out:")
+	fmt.Fprintln(options.Out, logoutURL)
+	if !options.NoBrowser {
+		_ = m.OpenBrowser(logoutURL)
+	}
+
+	type result struct {
+		err error
+	}
+	resultChannel := make(chan result, 1)
+	server := &http.Server{ReadHeaderTimeout: 5 * time.Second}
+	server.Handler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.URL.Path != "/callback" {
+			http.NotFound(writer, request)
+			return
+		}
+		if request.URL.Query().Get("state") != state {
+			http.Error(writer, "Invalid logout state.", http.StatusBadRequest)
+			resultChannel <- result{err: clierrors.New("authentication_required", "OIDC logout state validation failed", 3)}
+			return
+		}
+		if remoteError := request.URL.Query().Get("error"); remoteError != "" {
+			http.Error(writer, "Logout failed.", http.StatusBadRequest)
+			resultChannel <- result{err: clierrors.New("authentication_required", remoteError, 3)}
+			return
+		}
+		fmt.Fprintln(writer, "A8S CLI logout completed. You may close this window.")
+		resultChannel <- result{}
+	})
+	go func() {
+		_ = server.Serve(listener)
+	}()
+	defer server.Shutdown(context.Background())
+
+	select {
+	case logout := <-resultChannel:
+		if logout.err != nil {
+			return LogoutResult{RemoteAttempted: true}, logout.err
+		}
+	case <-ctx.Done():
+		return LogoutResult{RemoteAttempted: true}, clierrors.New("timeout", "logout timed out", 7)
+	}
+	return LogoutResult{RemoteAttempted: true}, nil
+}
+
 func (m *Manager) refresh(ctx context.Context, record credentials.Record) (credentials.Record, error) {
 	provider, err := oidc.NewProvider(ctx, record.Issuer)
 	if err != nil {
@@ -247,6 +355,31 @@ func (m *Manager) refresh(ctx context.Context, record credentials.Record) (crede
 func invalidRefreshGrant(err error) bool {
 	var retrieveError *oauth2.RetrieveError
 	return errors.As(err, &retrieveError) && retrieveError.ErrorCode == "invalid_grant"
+}
+
+func discoverEndSessionEndpoint(ctx context.Context, issuer string) (string, error) {
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(issuer, "/")+"/.well-known/openid-configuration", nil)
+	if err != nil {
+		return "", err
+	}
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return "", fmt.Errorf("discover OIDC logout endpoint: %w", err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode < 200 || response.StatusCode > 299 {
+		return "", fmt.Errorf("discover OIDC logout endpoint: unexpected HTTP %d", response.StatusCode)
+	}
+	var metadata struct {
+		EndSessionEndpoint string `json:"end_session_endpoint"`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&metadata); err != nil {
+		return "", fmt.Errorf("decode OIDC provider metadata: %w", err)
+	}
+	if strings.TrimSpace(metadata.EndSessionEndpoint) == "" {
+		return "", clierrors.New("authentication_required", "OIDC provider does not advertise an end-session endpoint", 3)
+	}
+	return metadata.EndSessionEndpoint, nil
 }
 
 type claims struct {

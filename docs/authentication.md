@@ -52,6 +52,44 @@ Direct access grants: Off
 
 The CLI client must not contain a client secret. A secret embedded in a distributed binary is not secret.
 
+Do not reuse the frontend Better Auth client for CLI login unless it is also
+configured to support native-app loopback redirects. The frontend currently uses
+a web callback shaped like:
+
+```text
+${BETTER_AUTH_URL}/api/auth/callback/keycloak
+```
+
+For example, the production frontend callback is:
+
+```text
+https://autonomous-istad.com/api/auth/callback/keycloak
+```
+
+The CLI instead starts a temporary local callback server and sends a redirect
+URI like:
+
+```text
+http://127.0.0.1:64239/callback
+```
+
+If Keycloak returns `Invalid parameter: redirect_uri`, the active client does
+not allow the CLI loopback URI. Fix it by creating the `a8s-cli` public client
+above, or by adding `http://127.0.0.1:*` to the client used by the CLI.
+
+For stricter Keycloak installations that do not allow wildcard ports, run login
+with a fixed callback port and add that exact URI in Keycloak:
+
+```bash
+a8s auth login --callback-port 64239
+```
+
+Allowed redirect URI:
+
+```text
+http://127.0.0.1:64239/callback
+```
+
 Required scopes should include:
 
 - `openid`

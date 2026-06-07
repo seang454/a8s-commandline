@@ -19,6 +19,7 @@ func addSessionCommands(group *cobra.Command, runtime *cliruntime.Runtime) {
 
 func newLoginCommand(runtime *cliruntime.Runtime) *cobra.Command {
 	var noBrowser bool
+	var callbackPort int
 	var loginTimeout time.Duration
 	command := &cobra.Command{
 		Use:   "login",
@@ -29,7 +30,7 @@ func newLoginCommand(runtime *cliruntime.Runtime) *cobra.Command {
 			}
 			ctx, cancel := context.WithTimeout(cmd.Context(), loginTimeout)
 			defer cancel()
-			record, err := runtime.Auth.Login(ctx, runtime.Config, internalauth.LoginOptions{NoBrowser: noBrowser, Out: runtime.Out})
+			record, err := runtime.Auth.Login(ctx, runtime.Config, internalauth.LoginOptions{NoBrowser: noBrowser, CallbackPort: callbackPort, Out: runtime.Out})
 			if err != nil {
 				return err
 			}
@@ -37,6 +38,7 @@ func newLoginCommand(runtime *cliruntime.Runtime) *cobra.Command {
 		},
 	}
 	command.Flags().BoolVar(&noBrowser, "no-browser", false, "print the login URL without opening a browser")
+	command.Flags().IntVar(&callbackPort, "callback-port", 0, "fixed local callback port; Keycloak redirect URI must allow http://127.0.0.1:<port>/callback")
 	command.Flags().DurationVar(&loginTimeout, "login-timeout", 5*time.Minute, "maximum time to complete browser authentication")
 	return command
 }
@@ -62,18 +64,46 @@ func newStatusCommand(runtime *cliruntime.Runtime) *cobra.Command {
 }
 
 func newLogoutCommand(runtime *cliruntime.Runtime) *cobra.Command {
-	return &cobra.Command{
+	var noBrowser bool
+	var callbackPort int
+	var keycloak bool
+	var logoutTimeout time.Duration
+	command := &cobra.Command{
 		Use:   "logout",
 		Short: "Clear stored credentials for the active context",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			remoteLogout := keycloak || callbackPort > 0 || noBrowser
+			remoteStatus := "skipped"
+			remoteError := ""
 			if runtime.Auth != nil {
+				if remoteLogout {
+					ctx, cancel := context.WithTimeout(cmd.Context(), logoutTimeout)
+					defer cancel()
+					result, err := runtime.Auth.EndSession(ctx, runtime.Config, internalauth.LogoutOptions{NoBrowser: noBrowser, CallbackPort: callbackPort, Out: runtime.Out})
+					if result.RemoteAttempted {
+						remoteStatus = "completed"
+					}
+					if err != nil {
+						remoteStatus = "failed"
+						remoteError = err.Error()
+					}
+				}
 				if err := runtime.Auth.Logout(runtime.Config); err != nil {
 					return err
 				}
 			}
-			return runtime.Printer.Print(map[string]any{"status": "logged-out", "context": runtime.Config.ContextName})
+			output := map[string]any{"status": "logged-out", "context": runtime.Config.ContextName, "keycloakLogout": remoteStatus}
+			if remoteError != "" {
+				output["keycloakLogoutError"] = remoteError
+			}
+			return runtime.Printer.Print(output)
 		},
 	}
+	command.Flags().BoolVar(&keycloak, "keycloak", false, "also end the Keycloak browser session")
+	command.Flags().BoolVar(&noBrowser, "no-browser", false, "print the Keycloak logout URL without opening a browser; implies --keycloak")
+	command.Flags().IntVar(&callbackPort, "callback-port", 0, "fixed local logout callback port; Keycloak post logout redirect URI must allow http://127.0.0.1:<port>/callback")
+	command.Flags().DurationVar(&logoutTimeout, "logout-timeout", 2*time.Minute, "maximum time to complete browser logout")
+	return command
 }
 
 func statusOutput(runtime *cliruntime.Runtime, record credentials.Record) map[string]any {

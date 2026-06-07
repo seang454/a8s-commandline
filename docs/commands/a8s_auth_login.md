@@ -10,6 +10,7 @@ a8s auth login [flags]
 
 ## Flags
 
+- `--callback-port` `int` - fixed local callback port; Keycloak redirect URI must allow http://127.0.0.1:<port>/callback (default `0`)
 - `--login-timeout` `duration` - maximum time to complete browser authentication (default `5m0s`)
 - `--no-browser` `bool` - print the login URL without opening a browser
 
